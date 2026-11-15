@@ -1,8 +1,10 @@
 import os
+import re
 import sqlite3
 import json
 import math
 import random
+import hashlib
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -10,12 +12,13 @@ from pathlib import Path
 from statistics import median
 from typing import Dict, List, Tuple, Union, Any, Optional
 
-DB_NAME = "cosmo_care.db"
+DB_NAME = str(Path(__file__).parent / "cosmo_care.db")
 DATA_DIR = Path(__file__).parent / "data"
 MEDIA_DIR = Path(__file__).parent / "assets" / "media"
+USER_MEDIA_ROOT = Path(__file__).parent / "assets" / "user_media"
 SPEED_OF_LIGHT_KM_S = 299792.458
-EARTH_PREP_DAYS = 3.0
-SAFETY_BUFFER_PERCENT = 0.15
+EARTH_PREP_DAYS = 14.0
+SAFETY_BUFFER_PERCENT = 0.25
 
 VALID_ZONES = ["earth", "leo", "cislunar", "deep_space", "lunar_surface", "mars_surface"]
 
@@ -33,6 +36,11 @@ VOICE_CORRECTIONS = {
     "em are ee": "MRE",
     "water bag": "Water Pouch"
 }
+
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.strip().encode("utf-8")).hexdigest()
+
 
 @dataclass
 class AstronautVitals:
@@ -71,12 +79,15 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS astronauts (
                 astronaut_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
+                role TEXT DEFAULT 'Mission Specialist',
                 age INTEGER,
                 sex TEXT,
                 height_cm REAL,
                 weight_kg REAL,
+                blood_type TEXT DEFAULT 'O+',
                 fitness_level TEXT,
-                mission_duration_days INTEGER
+                mission_duration_days INTEGER,
+                password_hash TEXT
             );
 
             CREATE TABLE IF NOT EXISTS astronaut_attributes (
@@ -94,6 +105,8 @@ class DatabaseManager:
                 systolic_mmhg REAL,
                 diastolic_mmhg REAL,
                 hrv_rmssd REAL,
+                co2_mmhg REAL DEFAULT 2.6,
+                ectopic_beats INTEGER DEFAULT 0,
                 flight_day INTEGER,
                 recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (astronaut_id) REFERENCES astronauts(astronaut_id) ON DELETE CASCADE
@@ -124,7 +137,13 @@ class DatabaseManager:
                 category TEXT,
                 quantity REAL DEFAULT 0.0,
                 unit TEXT,
+                daily_use_per_person REAL DEFAULT 0.5,
                 unit_mass_kg REAL DEFAULT 0.5,
+                kcal_per_100g REAL DEFAULT 0.0,
+                protein_g REAL DEFAULT 0.0,
+                fat_g REAL DEFAULT 0.0,
+                carbs_g REAL DEFAULT 0.0,
+                shelf_life TEXT DEFAULT '2 y',
                 expiration_date TEXT
             );
 
@@ -215,31 +234,337 @@ class DatabaseManager:
                 acknowledged BOOLEAN DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS notifications (
+                notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                astronaut_id TEXT,
+                severity TEXT NOT NULL,
+                title TEXT NOT NULL,
+                message TEXT NOT NULL,
+                is_read BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS system_schedule (
+                schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                time_slot TEXT NOT NULL UNIQUE,
+                event_title TEXT NOT NULL,
+                voice_prompt TEXT NOT NULL,
+                play_alarm BOOLEAN DEFAULT 0
+            );
+
+            CREATE TABLE IF NOT EXISTS mission_state (
+                state_key TEXT PRIMARY KEY,
+                state_value TEXT NOT NULL
+            );
         """)
+
+        cols = [r["name"] for r in cursor.execute("PRAGMA table_info(astronauts)").fetchall()]
+        if "password_hash" not in cols:
+            cursor.execute("ALTER TABLE astronauts ADD COLUMN password_hash TEXT;")
+        if "role" not in cols:
+            cursor.execute("ALTER TABLE astronauts ADD COLUMN role TEXT DEFAULT 'Mission Specialist';")
+        if "blood_type" not in cols:
+            cursor.execute("ALTER TABLE astronauts ADD COLUMN blood_type TEXT DEFAULT 'O+';")
+
+        inv_cols = [r["name"] for r in cursor.execute("PRAGMA table_info(inventory)").fetchall()]
+        for col_def in [
+            ("daily_use_per_person", "REAL DEFAULT 0.5"),
+            ("kcal_per_100g", "REAL DEFAULT 0.0"),
+            ("protein_g", "REAL DEFAULT 0.0"),
+            ("fat_g", "REAL DEFAULT 0.0"),
+            ("carbs_g", "REAL DEFAULT 0.0"),
+            ("shelf_life", "TEXT DEFAULT '2 y'")
+        ]:
+            if col_def[0] not in inv_cols:
+                cursor.execute(f"ALTER TABLE inventory ADD COLUMN {col_def[0]} {col_def[1]};")
+
         conn.commit()
         conn.close()
 
     def seed_initial_data_if_empty(self):
         conn = self.get_connection()
-        count = conn.execute("SELECT COUNT(*) as c FROM astronauts").fetchone()["c"]
-        if count == 0:
+        cursor = conn.cursor()
+
+        default_crew = [
+            ("A004", "Dr. Sarah Mitchell", "Chief Medical Officer", 42, "Female", 170.5, 65.0, "O+", "High", 180, hash_password("Sarah@2026")),
+            ("A005", "Cmdr. James Holden", "Mission Commander", 48, "Male", 182.0, 84.5, "A+", "Moderate", 365, hash_password("Holden@2026")),
+            ("A006", "Eng. Elena Rostova", "Flight Systems Engineer", 35, "Female", 166.0, 59.0, "B+", "High", 365, hash_password("Elena@2026")),
+        ]
+        for c in default_crew:
+            cursor.execute("""
+                INSERT OR IGNORE INTO astronauts 
+                (astronaut_id, name, role, age, sex, height_cm, weight_kg, blood_type, fitness_level, mission_duration_days, password_hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, c)
+            cursor.execute("""
+                UPDATE astronauts SET password_hash = COALESCE(password_hash, ?), role = COALESCE(role, ?)
+                WHERE astronaut_id = ?
+            """, (c[10], c[2], c[0]))
+
+        inv_count = cursor.execute("SELECT COUNT(*) as c FROM inventory").fetchone()["c"]
+        if inv_count < 5:
+            cursor.execute("DELETE FROM inventory")
+            supply_items = [
+                ("Water (net after recycling)", "Life Support", 2400.0, "L", 1.2, 1.0, 0, 0, 0, 0, "5 y", "2031-12-31"),
+                ("Oxygen Reserve", "Life Support", 900.0, "kg", 0.84, 1.0, 0, 0, 0, 0, "10 y", "2035-12-31"),
+                ("CO2 Scrubber Cartridges", "Other", 60.0, "pcs", 0.25, 2.5, 0, 0, 0, 0, "5 y", "2031-12-31"),
+                ("Medical Consumables", "Other", 30.0, "kits", 0.04, 1.2, 0, 0, 0, 0, "3 y", "2029-12-31"),
+                ("Spare Parts (ECLSS)", "Other", 120.0, "kg", 0.15, 1.0, 0, 0, 0, 0, "10 y", "2035-12-31"),
+                ("Hygiene Supplies", "Other", 90.0, "kg", 0.10, 1.0, 0, 0, 0, 0, "4 y", "2030-12-31"),
+                ("Rice (dry)", "Grains", 120.0, "kg", 0.15, 1.0, 360, 7, 0.6, 79, "3-5 y", "2030-12-31"),
+                ("Oats", "Grains", 60.0, "kg", 0.08, 1.0, 380, 13, 7, 67, "2 y", "2028-12-31"),
+                ("Lentils (dried)", "Legumes", 80.0, "kg", 0.10, 1.0, 350, 25, 1, 60, "3 y", "2029-12-31"),
+                ("Freeze-dried Chicken", "Protein", 50.0, "kg", 0.08, 1.0, 400, 65, 12, 2, "10 y", "2036-12-31"),
+                ("Tuna Pouch", "Protein", 40.0, "kg", 0.06, 1.0, 130, 28, 1, 0, "2 y", "2028-12-31"),
+                ("Peanut Butter", "Fats/Nuts", 30.0, "kg", 0.05, 1.0, 590, 25, 50, 20, "1 y", "2027-12-31"),
+                ("Almonds", "Fats/Nuts", 25.0, "kg", 0.04, 1.0, 580, 21, 50, 22, "1 y", "2027-12-31"),
+                ("Milk Powder", "Dairy", 40.0, "kg", 0.05, 1.0, 500, 26, 27, 38, "2 y", "2028-12-31"),
+                ("Dried Fruit Mix", "Fruit", 30.0, "kg", 0.05, 1.0, 300, 3, 0.5, 79, "1 y", "2027-12-31"),
+                ("Energy Bar", "Ready", 30.0, "kg", 0.06, 1.0, 420, 8, 15, 60, "1.5 y", "2028-06-30"),
+            ]
+            cursor.executemany("""
+                INSERT INTO inventory 
+                (item_name, category, quantity, unit, daily_use_per_person, unit_mass_kg, kcal_per_100g, protein_g, fat_g, carbs_g, shelf_life, expiration_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, supply_items)
+
+        sched_count = cursor.execute("SELECT COUNT(*) as c FROM system_schedule").fetchone()["c"]
+        if sched_count == 0:
+            default_schedules = [
+                ("07:00", "Morning Wake-Up & Biometric Scan", "Good morning! Alarm completed. Please confirm you are awake so I can log your sleep duration, and complete your morning symptom check-in.", 1),
+                ("08:00", "Breakfast & Hydration Ration Log", "It is 08:00 hours. Time for breakfast and hydration. Please tell me or log your consumed ration packs so I can update the ship's food stocks.", 0),
+                ("10:30", "ARED Resistive & T2 Countermeasure Block", "Time for your scheduled 2.5-hour ARED resistive and T2 treadmill exercise countermeasure session.", 0),
+                ("13:00", "Midday Nutrition & Water Check", "Hey there, lunch time! Did you eat and drink your water ration? Don't forget to log your ration packs.", 0),
+                ("19:00", "Evening Dinner & Psychological Check-in", "Good evening. Time for dinner rations and your evening health and mood check-in.", 0),
+                ("22:00", "Circadian Sleep Pod Lock-in", "It is 22:00 hours. Time for sleep. Please confirm when you are ready to sleep so I can start your sleep timer.", 0),
+            ]
+            cursor.executemany("""
+                INSERT INTO system_schedule (time_slot, event_title, voice_prompt, play_alarm)
+                VALUES (?, ?, ?, ?)
+            """, default_schedules)
+
+        default_states = [
+            ("ship_time", "08:00"),
+            ("mission_day", "24"),
+            ("distance_million_km", "225.0"),
+        ]
+        for k, v in default_states:
+            cursor.execute("INSERT OR IGNORE INTO mission_state (state_key, state_value) VALUES (?, ?)", (k, v))
+
+        for aid, _, _, _, _, _, _, _, _, _, _ in default_crew:
+            v_cnt = cursor.execute("SELECT COUNT(*) as c FROM live_vitals_telemetry WHERE astronaut_id = ?", (aid,)).fetchone()["c"]
+            if v_cnt < 5:
+                for day_offset in range(18, 25):
+                    cursor.execute("""
+                        INSERT INTO live_vitals_telemetry 
+                        (astronaut_id, heart_rate_bpm, systolic_mmhg, diastolic_mmhg, hrv_rmssd, co2_mmhg, ectopic_beats, flight_day)
+                        VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+                    """, (
+                        aid,
+                        round(random.gauss(68.0, 2.5), 1),
+                        round(random.gauss(118.0, 3.0), 1),
+                        round(random.gauss(76.0, 2.5), 1),
+                        round(random.gauss(44.0, 3.0), 1),
+                        round(random.uniform(2.3, 2.8), 2),
+                        day_offset
+                    ))
+            s_cnt = cursor.execute("SELECT COUNT(*) as c FROM sleep_sessions WHERE astronaut_id = ?", (aid,)).fetchone()["c"]
+            if s_cnt < 3:
+                for d in range(5, 0, -1):
+                    st_dt = datetime.now(timezone.utc) - timedelta(days=d, hours=8)
+                    wk_dt = st_dt + timedelta(hours=round(random.uniform(6.8, 8.1), 1))
+                    dur = round((wk_dt - st_dt).total_seconds() / 3600.0, 2)
+                    cursor.execute("""
+                        INSERT INTO sleep_sessions (astronaut_id, sleep_start, wake_confirm, duration_hours, status)
+                        VALUES (?, ?, ?, ?, 'AWAKE')
+                    """, (aid, st_dt.isoformat(timespec="seconds"), wk_dt.isoformat(timespec="seconds"), dur))
+
+        conn.commit()
+        conn.close()
+
+    def authenticate_user(self, astronaut_id: str, password: str) -> Optional[Dict[str, Any]]:
+        conn = self.get_connection()
+        row = conn.execute(
+            "SELECT * FROM astronauts WHERE UPPER(astronaut_id) = UPPER(?)",
+            (astronaut_id.strip(),)
+        ).fetchone()
+        conn.close()
+        if not row:
+            return None
+        expected_hash = row["password_hash"]
+        if expected_hash and expected_hash == hash_password(password):
+            user_dict = dict(row)
+            self.ensure_user_media_folders(user_dict["astronaut_id"])
+            return user_dict
+        return None
+
+    def ensure_user_media_folders(self, astronaut_id: str) -> Dict[str, Path]:
+        base = USER_MEDIA_ROOT / astronaut_id
+        paths = {
+            "music": base / "music",
+            "video": base / "video",
+            "voice": base / "voice",
+        }
+        for p in paths.values():
+            p.mkdir(parents=True, exist_ok=True)
+        return paths
+
+    def update_astronaut_biometrics(self, astronaut_id: str, height_cm: float, weight_kg: float,
+                                    age: int, fitness_level: str) -> Dict[str, Any]:
+        conn = self.get_connection()
+        conn.execute("""
+            UPDATE astronauts
+            SET height_cm = ?, weight_kg = ?, age = ?, fitness_level = ?
+            WHERE astronaut_id = ?
+        """, (round(height_cm, 1), round(weight_kg, 1), int(age), fitness_level, astronaut_id))
+        conn.commit()
+        updated = conn.execute("SELECT * FROM astronauts WHERE astronaut_id = ?", (astronaut_id,)).fetchone()
+        conn.close()
+        self.add_notification(
+            astronaut_id,
+            "INFO",
+            "Biometric Profile Updated",
+            f"Height ({height_cm:.1f} cm) and Weight ({weight_kg:.1f} kg) synchronized across all medical & nutrition modules."
+        )
+        return dict(updated) if updated else {}
+
+    def get_astronaut_by_id(self, astronaut_id: str) -> Optional[Dict[str, Any]]:
+        conn = self.get_connection()
+        row = conn.execute("SELECT * FROM astronauts WHERE astronaut_id = ?", (astronaut_id,)).fetchone()
+        conn.close()
+        return dict(row) if row else None
+
+    @staticmethod
+    def calculate_derived_biometrics(profile: Dict[str, Any]) -> Dict[str, Any]:
+        h_cm = float(profile.get("height_cm") or 170.0)
+        w_kg = float(profile.get("weight_kg") or 65.0)
+        age = int(profile.get("age") or 40)
+        sex = str(profile.get("sex") or "Female")
+        fitness = str(profile.get("fitness_level") or "Moderate")
+
+        h_m = max(1.0, h_cm / 100.0)
+        bmi = round(w_kg / (h_m * h_m), 1)
+        if bmi < 18.5:
+            bmi_status = "Underweight"
+        elif bmi < 25.0:
+            bmi_status = "Optimal Spaceflight Mass"
+        elif bmi < 30.0:
+            bmi_status = "Elevated Mass"
+        else:
+            bmi_status = "High Mass Alert"
+
+        s_offset = 5 if sex.lower() == "male" else -161
+        bmr = (10.0 * w_kg) + (6.25 * h_cm) - (5.0 * age) + s_offset
+        mult = 1.65 if fitness == "High" else (1.5 if fitness == "Moderate" else 1.35)
+        daily_kcal = round(bmr * mult)
+        hydration_liters = round(max(2.2, w_kg * 0.038), 2)
+        protein_target_g = round(w_kg * 1.4)
+
+        return {
+            "bmi": bmi,
+            "bmi_status": bmi_status,
+            "daily_kcal_target": daily_kcal,
+            "hydration_target_l": hydration_liters,
+            "protein_target_g": protein_target_g
+        }
+
+    def add_notification(self, astronaut_id: str, severity: str, title: str, message: str):
+        conn = self.get_connection()
+        recent = conn.execute("""
+            SELECT notification_id FROM notifications
+            WHERE astronaut_id = ? AND title = ? AND message = ?
+            ORDER BY notification_id DESC LIMIT 1
+        """, (astronaut_id, title, message)).fetchone()
+        if not recent:
             conn.execute("""
-                INSERT INTO astronauts (astronaut_id, name, age, sex, height_cm, weight_kg, fitness_level, mission_duration_days)
-                VALUES ('A004', 'Dr. Sarah Mitchell', 42, 'Female', 170.5, 65.0, 'High', 180),
-                       ('A005', 'Cmdr. James Holden', 48, 'Male', 182.0, 84.5, 'Moderate', 365)
-            """)
-            conn.execute("""
-                INSERT INTO inventory (item_name, category, quantity, unit, unit_mass_kg, expiration_date)
-                VALUES ('MRE Protein Ration', 'Food', 25.0, 'packs', 0.4, '2028-12-31'),
-                       ('Isotonic Water Pouch', 'Water', 40.0, 'pouches', 0.5, '2029-06-30')
-            """)
+                INSERT INTO notifications (astronaut_id, severity, title, message, is_read)
+                VALUES (?, ?, ?, ?, 0)
+            """, (astronaut_id, severity, title, message))
             conn.commit()
+        conn.close()
+
+    def get_notifications(self, astronaut_id: str, limit: int = 25) -> List[Dict[str, Any]]:
+        conn = self.get_connection()
+        rows = conn.execute("""
+            SELECT * FROM notifications
+            WHERE astronaut_id = ? OR astronaut_id IS NULL
+            ORDER BY notification_id DESC LIMIT ?
+        """, (astronaut_id, limit)).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+
+    def mark_notifications_read(self, astronaut_id: str):
+        conn = self.get_connection()
+        conn.execute("UPDATE notifications SET is_read = 1 WHERE astronaut_id = ? OR astronaut_id IS NULL", (astronaut_id,))
+        conn.commit()
+        conn.close()
+
+    def get_mission_state(self) -> Dict[str, str]:
+        conn = self.get_connection()
+        rows = conn.execute("SELECT state_key, state_value FROM mission_state").fetchall()
+        conn.close()
+        return {r["state_key"]: r["state_value"] for r in rows}
+
+    def set_mission_state(self, key: str, value: str):
+        conn = self.get_connection()
+        conn.execute("""
+            INSERT INTO mission_state (state_key, state_value) VALUES (?, ?)
+            ON CONFLICT(state_key) DO UPDATE SET state_value = excluded.state_value
+        """, (key, str(value)))
+        conn.commit()
+        conn.close()
+
+    def get_schedules(self) -> List[Dict[str, Any]]:
+        conn = self.get_connection()
+        rows = conn.execute("SELECT * FROM system_schedule ORDER BY time_slot ASC").fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+
+    def upsert_schedule(self, time_slot: str, event_title: str, voice_prompt: str, play_alarm: bool = False):
+        conn = self.get_connection()
+        conn.execute("""
+            INSERT INTO system_schedule (time_slot, event_title, voice_prompt, play_alarm)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(time_slot) DO UPDATE SET
+                event_title = excluded.event_title,
+                voice_prompt = excluded.voice_prompt,
+                play_alarm = excluded.play_alarm
+        """, (time_slot.strip(), event_title.strip(), voice_prompt.strip(), 1 if play_alarm else 0))
+        conn.commit()
+        conn.close()
+
+    def delete_schedule(self, schedule_id: int):
+        conn = self.get_connection()
+        conn.execute("DELETE FROM system_schedule WHERE schedule_id = ?", (schedule_id,))
+        conn.commit()
         conn.close()
 
 
 class SensorSimulator:
     def __init__(self, db: DatabaseManager):
         self.db = db
+
+    def get_latest_vitals(self, astronaut_id: str, flight_day: int = 24) -> AstronautVitals:
+        conn = self.db.get_connection()
+        row = conn.execute("""
+            SELECT * FROM live_vitals_telemetry
+            WHERE astronaut_id = ?
+            ORDER BY telemetry_id DESC LIMIT 1
+        """, (astronaut_id,)).fetchone()
+        conn.close()
+        if not row:
+            return self.generate_live_vitals(astronaut_id, flight_day=flight_day)
+        return AstronautVitals(
+            astronaut_id=astronaut_id,
+            flight_day=row["flight_day"] or flight_day,
+            hr=float(row["heart_rate_bpm"]),
+            sbp=float(row["systolic_mmhg"]),
+            dbp=float(row["diastolic_mmhg"]),
+            hrv=float(row["hrv_rmssd"]),
+            co2=float(row["co2_mmhg"] if "co2_mmhg" in row.keys() and row["co2_mmhg"] is not None else 2.6),
+            ectopic=int(row["ectopic_beats"] if "ectopic_beats" in row.keys() and row["ectopic_beats"] is not None else 0),
+        )
 
     def generate_live_vitals(self, astronaut_id: str, flight_day: int = 24, anomaly_mode: Optional[str] = None) -> AstronautVitals:
         hr = round(random.gauss(68.0, 3.5), 1)
@@ -255,14 +580,14 @@ class SensorSimulator:
         pain = 0
 
         if anomaly_mode == "arrhythmia":
-            hr = round(random.uniform(95.0, 112.0), 1)
+            hr = round(random.uniform(98.0, 114.0), 1)
             hrv = round(random.uniform(18.0, 24.0), 1)
             ectopic = random.randint(3, 6)
             region = "Calves/Hamstrings"
             symptom = "Acute Cramp/Spasm"
             pain = 7
         elif anomaly_mode == "hypovolemia":
-            hr = round(random.uniform(92.0, 105.0), 1)
+            hr = round(random.uniform(94.0, 106.0), 1)
             sbp = 102.0
             dbp = 78.0
             dizzy = True
@@ -291,19 +616,19 @@ class SensorSimulator:
         conn = self.db.get_connection()
         conn.execute("""
             INSERT INTO live_vitals_telemetry 
-            (astronaut_id, heart_rate_bpm, systolic_mmhg, diastolic_mmhg, hrv_rmssd, flight_day)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (astronaut_id, vitals.hr, vitals.sbp, vitals.dbp, vitals.hrv, vitals.flight_day))
+            (astronaut_id, heart_rate_bpm, systolic_mmhg, diastolic_mmhg, hrv_rmssd, co2_mmhg, ectopic_beats, flight_day)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (astronaut_id, vitals.hr, vitals.sbp, vitals.dbp, vitals.hrv, vitals.co2, vitals.ectopic, vitals.flight_day))
         conn.commit()
         conn.close()
         return vitals
 
     def generate_environment_reading(self, anomaly_mode: Optional[str] = None) -> Dict[str, Any]:
-        oxygen = round(random.uniform(20.5, 21.2), 2)
-        co2_ppm = round(random.uniform(800.0, 1400.0), 1)
-        temp_c = round(random.uniform(21.0, 23.5), 1)
-        humidity = round(random.uniform(40.0, 50.0), 1)
-        pressure = round(random.uniform(100.5, 101.8), 2)
+        oxygen = round(random.uniform(20.6, 21.2), 2)
+        co2_ppm = round(random.uniform(900.0, 1500.0), 1)
+        temp_c = round(random.uniform(21.2, 23.0), 1)
+        humidity = round(random.uniform(42.0, 48.0), 1)
+        pressure = round(random.uniform(100.8, 101.5), 2)
 
         if anomaly_mode == "cabin_danger":
             oxygen = round(random.uniform(18.1, 19.0), 2)
@@ -328,7 +653,7 @@ class SensorSimulator:
         }
 
     def generate_radiation_reading(self, detector_id: str = "RAD-01", spike: bool = False) -> Dict[str, Any]:
-        cps = round(random.uniform(45.0, 85.0), 2) if spike else round(random.uniform(8.0, 14.0), 2)
+        cps = round(random.uniform(48.0, 85.0), 2) if spike else round(random.uniform(8.0, 14.0), 2)
         rad_type = "Proton" if spike else random.choice(["Gamma", "Neutron", "Unclassified"])
         status = "warning" if spike else "operational"
 
@@ -651,9 +976,12 @@ class DeepSpaceSupplyEngine:
             FROM consumption_logs
             WHERE item_id = ? AND logged_at >= ?
         """, (item_id, cutoff_date)).fetchone()
+        item_row = conn.execute("SELECT daily_use_per_person FROM inventory WHERE item_id = ?", (item_id,)).fetchone()
         conn.close()
         total = row["total_consumed"] if row and row["total_consumed"] else 0.0
-        return total / float(days_window) if days_window > 0 else 0.0
+        measured = total / float(days_window) if days_window > 0 else 0.0
+        default_rate = float(item_row["daily_use_per_person"] or 0.5) * 3.0 if item_row else 0.5
+        return max(measured, default_rate)
 
     def evaluate_inventory_and_trigger(self, distance_km: float) -> Dict[str, Any]:
         lead_data = self.calculate_lead_times(distance_km)
@@ -688,7 +1016,7 @@ class DeepSpaceSupplyEngine:
             })
 
             if is_critical:
-                deficit_qty = max((total_lead_time * max(burn_rate, 2.0) * 1.5) - current_stock, 50.0)
+                deficit_qty = max((total_lead_time * max(burn_rate, 0.5) * 1.2) - current_stock, 25.0)
                 reorder_packet_items.append({
                     "item_id": item_id,
                     "name": name,
@@ -699,7 +1027,7 @@ class DeepSpaceSupplyEngine:
         payload_summary = ""
         if reorder_packet_items:
             payload_summary = ", ".join(
-                [f"{i['requested_quantity']} {i['unit']} of {i['name']}" for i in reorder_packet_items]
+                [f"{i['requested_quantity']} {i['unit']} of {i['name']}" for i in reorder_packet_items[:4]]
             )
             cursor.execute("""
                 INSERT INTO reorder_transmissions
@@ -754,120 +1082,6 @@ class PersonalizedPlanAndExamEngine:
         profile["dietary_restrictions"] = [a["attribute_value"].lower() for a in attrs if a["attribute_type"] == "diet"]
         profile["allergies"] = [a["attribute_value"].lower() for a in attrs if a["attribute_type"] == "allergy"]
         return profile
-
-    def build_personalized_plan(self, astronaut_id: str, distance_km: float, on_surface: bool = False,
-                                exercises_kb: Optional[List[Dict]] = None,
-                                diets_kb: Optional[List[Dict]] = None) -> Dict[str, Any]:
-        profile = self.get_astronaut_profile(astronaut_id)
-        if not profile:
-            return {"error": f"Unknown astronaut {astronaut_id}"}
-
-        zone = self.resolve_zone(distance_km, on_surface)
-        ex_list = exercises_kb if exercises_kb is not None else self._load_json_fallback("nasa_distance_exercises.json")
-        diet_list = diets_kb if diets_kb is not None else self._load_json_fallback("mars_nutrient_diet_plan.json")
-
-        recommended_exercises = []
-        blocked_exercises = []
-        for ex in ex_list:
-            if zone not in ex.get("zones", []):
-                continue
-            contra = [c.lower() for c in ex.get("contraindications", [])]
-            conflicts = [inj for inj in profile["injuries"] if inj in contra]
-            if conflicts:
-                blocked_exercises.append({"exercise": ex["name"], "reason": f"Contraindicated for {', '.join(conflicts)}"})
-            else:
-                recommended_exercises.append(ex)
-
-        recommended_diets = []
-        for d in diet_list:
-            if zone not in d.get("zones", []):
-                continue
-            excl = [r.lower() for r in d.get("excludes_restrictions", [])]
-            req = [r.lower() for r in d.get("requires_restrictions", [])]
-            allergens = [a.lower() for a in d.get("allergen_tags", [])]
-
-            if any(r in excl for r in profile["dietary_restrictions"]):
-                continue
-            if req and not any(r in req for r in profile["dietary_restrictions"]):
-                continue
-            if any(a in allergens for a in profile["allergies"]):
-                continue
-            recommended_diets.append(d)
-
-        return {
-            "astronaut": profile,
-            "zone": zone,
-            "distance_km": distance_km,
-            "recommended_exercises": recommended_exercises,
-            "blocked_exercises": blocked_exercises,
-            "recommended_diets": recommended_diets
-        }
-
-    def record_and_evaluate_exam(self, astronaut_id: str, exam_id: str, values: Dict[str, Any],
-                                 exam_defs: Optional[List[Dict]] = None) -> List[Dict[str, Any]]:
-        defs = exam_defs if exam_defs is not None else self._load_exam_defs()
-        exam_Map = {e["id"]: e for e in defs}
-        if exam_id not in exam_Map:
-            return []
-
-        exam = exam_Map[exam_id]
-        fields_meta = {f["name"]: f for f in exam.get("fields", [])}
-        today_str = datetime.now().strftime("%Y-%m-%d")
-
-        findings = []
-        conn = self.db.get_connection()
-        for fname, val in values.items():
-            if fname not in fields_meta:
-                continue
-            fmeta = fields_meta[fname]
-            flag = self._check_exam_field(fmeta, val)
-            conn.execute("""
-                INSERT INTO medical_exam_records (astronaut_id, exam_id, exam_date, field_name, field_value, flag)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (astronaut_id, exam_id, today_str, fname, str(val), flag))
-            if flag:
-                findings.append({
-                    "exam": exam["name"],
-                    "field": fmeta["label"],
-                    "value": val,
-                    "flag": flag,
-                    "review": exam.get("review", "Flight Surgeon Review")
-                })
-        conn.commit()
-        conn.close()
-        return findings
-
-    @staticmethod
-    def _check_exam_field(field: Dict[str, Any], value: Any) -> Optional[str]:
-        ftype = field.get("type")
-        if ftype in ("number", "int"):
-            num = float(value)
-            if field.get("normal_min") is not None and num < float(field["normal_min"]):
-                return "LOW"
-            if field.get("normal_max") is not None and num > float(field["normal_max"]):
-                return "HIGH"
-        elif ftype == "choice":
-            if str(value).lower() in [x.lower() for x in field.get("abnormal", [])]:
-                return "ABNORMAL"
-        elif field.get("normal_values"):
-            if str(value).lower() not in [x.lower() for x in field["normal_values"]]:
-                return "ABNORMAL"
-        return None
-
-    @staticmethod
-    def _load_json_fallback(filename: str) -> List[Dict]:
-        path = DATA_DIR / filename
-        if path.exists():
-            return json.loads(path.read_text(encoding="utf-8"))
-        return []
-
-    @staticmethod
-    def _load_exam_defs() -> List[Dict]:
-        for name in ("passage_exam_definitions.json", "exam_definitions.json"):
-            p = DATA_DIR / name
-            if p.exists():
-                return json.loads(p.read_text(encoding="utf-8")).get("exams", [])
-        return []
 
 
 class RoutineAndSleepTracker:
@@ -981,18 +1195,6 @@ class DangerAlertManager:
                 distance_km=distance_km
             ))
 
-        inv_status = self.supply_engine.evaluate_inventory_and_trigger(distance_km)
-        if inv_status["critical_reorders"]:
-            alerts.append(self._register_alert(
-                astronaut_id=active_astronaut_id,
-                category="STOCK_WARNING",
-                severity="CRITICAL",
-                title="Critical Supply Depletion",
-                message=f"Auto-reorder queued for Earth: {inv_status['payload_summary']}",
-                notify_earth=True,
-                distance_km=distance_km
-            ))
-
         peer_alerts = self.get_other_astronauts_danger_warnings(active_astronaut_id)
         alerts.extend(peer_alerts)
 
@@ -1059,6 +1261,7 @@ class DangerAlertManager:
 
         conn.commit()
         conn.close()
+        self.db.add_notification(astronaut_id, severity, title, message)
         return {
             "astronaut_id": astronaut_id,
             "category": category,
@@ -1067,7 +1270,7 @@ class DangerAlertManager:
             "message": message,
             "earth_notified": notify_earth,
             "play_siren": True,
-            "voice_announcement": f"{severity} Alert! {title}. {message} Earth Mission Control and onboard crew have been notified. Starting 15-minute welfare check-ins."
+            "voice_announcement": f"{severity} Alert! {title}. {message} Earth Mission Control and onboard crew have been notified."
         }
 
 
@@ -1111,13 +1314,9 @@ When the user feels sad, stressed, lonely, or down, DO NOT do the same thing eve
   3. Initiated a **15-minute recurring welfare check-in timer** (`[SET_CHECKIN_15M]`) to monitor their condition closely.
 
 ### 4. PROACTIVE CLOCK, SLEEP & RATION SCHEDULE
-- **07:00 (Morning Wake-Up):** After the morning alarm finishes, say "Good morning {astronaut_name}!" and ask them to confirm they are awake so you can calculate and log their total sleep hours (`[CONFIRM_WAKE]`).
-- **08:00 (Breakfast), 13:00 (Lunch), 19:00 (Dinner):** Remind them warmly to eat and drink water. Explicitly remind them to tell you what rations they consumed so you can deduct it and update the **Food Inventory Stock** (`[UPDATE_STOCK]`).
-- **22:00 (Bedtime):** Remind them it is time to sleep. Ask them to confirm when they are getting into the sleep pod so you can start the sleep timer (`[CONFIRM_SLEEP]`).
-- **Every 15-Min Emergency Follow-up (`[EVENT:15M_CHECKIN]`):** Check on their physical symptoms and emotional state ("It's been 15 minutes since the alert. How are you holding up right now?").
-
-### 5. VOICE TYPING AUTO-CORRECTION AWARENESS
-- The user speaks via microphone. Even if their transcript has minor grammar slips, respond naturally to their intended meaning without correcting them pedantically.
+- **07:00 (Morning Wake-Up):** Ask them to confirm they are awake so you can calculate and log their total sleep hours (`[CONFIRM_WAKE]`).
+- **08:00 (Breakfast), 13:00 (Lunch), 19:00 (Dinner):** Remind them warmly to eat and drink water, and tell you what rations they consumed to update the **Food Inventory Stock** (`[UPDATE_STOCK]`).
+- **22:00 (Bedtime):** Remind them it is time to sleep and confirm when they are ready to start the sleep timer (`[CONFIRM_SLEEP]`).
 """
     return system_prompt
 
@@ -1131,6 +1330,8 @@ class AstroCompanionAgent:
         self.groq_model = "llama-3.3-70b-versatile"
         self.voice_corrector = self
         self.pending_media: Dict[str, Dict[str, str]] = {}
+        self.routine_tracker = RoutineAndSleepTracker(db)
+        self.supply_engine = DeepSpaceSupplyEngine(db)
 
     @staticmethod
     def clean_voice_transcript(raw_text: str) -> str:
@@ -1147,51 +1348,79 @@ class AstroCompanionAgent:
         return self.clean_voice_transcript(raw_text)
 
     def get_proactive_clock_prompt(self, simulated_time_str: str, astronaut_name: str) -> Optional[Dict[str, Any]]:
-        schedules = {
-            "07:00": {
-                "event": "MORNING_WAKEUP_ALARM",
-                "play_alarm": True,
-                "voice_text": f"Good morning {astronaut_name}! Alarm completed. Please confirm you are awake so I can log your sleep duration, and complete your morning symptom check-in."
-            },
-            "08:00": {
-                "event": "BREAKFAST_AND_STOCK_REMINDER",
-                "play_alarm": False,
-                "voice_text": f"Hello {astronaut_name}, it is time for breakfast and hydration. Please select your consumed ration packs so I can update the ship's food stocks."
-            },
-            "13:00": {
-                "event": "LUNCH_AND_STOCK_REMINDER",
-                "play_alarm": False,
-                "voice_text": f"Hey {astronaut_name}, lunch time! Did you eat and drink your water ration? Don't forget to log your ration packs."
-            },
-            "19:00": {
-                "event": "EVENING_CHECKIN_AND_DINNER",
-                "play_alarm": False,
-                "voice_text": f"Good evening {astronaut_name}. Time for dinner rations and your evening health and mood check-in."
-            },
-            "22:00": {
-                "event": "SLEEP_TIME_REMINDER",
-                "play_alarm": False,
-                "voice_text": f"It is 2200 hours, {astronaut_name}. Time for sleep. Please confirm when you are ready to sleep so I can start your sleep timer."
-            }
-        }
-        return schedules.get(simulated_time_str)
+        schedules = self.db.get_schedules()
+        for s in schedules:
+            if s["time_slot"] == simulated_time_str:
+                return {
+                    "event": s["event_title"],
+                    "play_alarm": bool(s["play_alarm"]),
+                    "voice_text": f"{astronaut_name}, {s['voice_prompt']}"
+                }
+        return None
 
     def get_random_local_media(self, astronaut_id: str) -> Dict[str, str]:
+        user_music_dir = USER_MEDIA_ROOT / astronaut_id / "music"
+        candidates = []
+        if user_music_dir.exists():
+            candidates.extend([user_music_dir / f for f in os.listdir(user_music_dir) if f.lower().endswith(('.mp3', '.mp4', '.wav'))])
         if MEDIA_DIR.exists():
-            files = [f for f in os.listdir(MEDIA_DIR) if f.lower().endswith(('.mp3', '.mp4', '.wav'))]
-            if files:
-                chosen = random.choice(files)
-                m_type = "video" if chosen.lower().endswith(".mp4") else "audio"
-                return {
-                    "media_type": m_type,
-                    "title": chosen,
-                    "file_path": str(MEDIA_DIR / chosen)
-                }
+            candidates.extend([MEDIA_DIR / f for f in os.listdir(MEDIA_DIR) if f.lower().endswith(('.mp3', '.mp4', '.wav'))])
+        if candidates:
+            chosen = random.choice(candidates)
+            m_type = "video" if chosen.suffix.lower() == ".mp4" else "audio"
+            return {
+                "media_type": m_type,
+                "title": chosen.name,
+                "file_path": str(chosen)
+            }
         return {
             "media_type": "audio",
             "title": "relax_song_1.mp3",
             "file_path": str(MEDIA_DIR / "relax_song_1.mp3")
         }
+
+    def _auto_update_db_from_intent(self, astronaut_id: str, lower_msg: str, reply_text: str) -> List[str]:
+        db_updates = []
+        wake_keywords = ["i am awake", "i'm awake", "woke up", "good morning", "awake now"]
+        if "[CONFIRM_WAKE]" in reply_text or any(k in lower_msg for k in wake_keywords):
+            res = self.routine_tracker.confirm_wake_up_and_calculate_sleep(astronaut_id)
+            db_updates.append(f"Sleep DB Updated: Logged {res['hours_slept']} hrs (Status: AWAKE)")
+
+        sleep_keywords = ["going to sleep", "ready to sleep", "good night", "sleeping now", "start sleep"]
+        if "[CONFIRM_SLEEP]" in reply_text or any(k in lower_msg for k in sleep_keywords):
+            self.routine_tracker.start_sleep_session(astronaut_id)
+            db_updates.append("Sleep DB Updated: Sleep session timer started (Status: SLEEPING)")
+
+        eat_keywords = ["ate", "consumed", "had breakfast", "had lunch", "had dinner", "mre", "ration", "protein", "water", "drank", "rice", "oats", "chicken", "tuna", "energy bar"]
+        if "[UPDATE_STOCK]" in reply_text or any(k in lower_msg for k in eat_keywords):
+            conn = self.db.get_connection()
+            items = conn.execute("SELECT * FROM inventory").fetchall()
+            conn.close()
+
+            qty_match = re.search(r"\b(\d+(?:\.\d+)?)\b", lower_msg)
+            qty = float(qty_match.group(1)) if qty_match else 1.0
+
+            updated_any = False
+            for item in items:
+                iname = item["item_name"].lower()
+                first_word = iname.split()[0]
+                if first_word in lower_msg or iname in lower_msg:
+                    c_res = self.supply_engine.consume_ration(astronaut_id, item["item_id"], rations_count=qty)
+                    if c_res.get("success"):
+                        db_updates.append(
+                            f"Inventory DB Updated: -{qty} {c_res['item_name']} (Remaining: {c_res['remaining_quantity']} {c_res['unit']})"
+                        )
+                        updated_any = True
+                        break
+
+            if not updated_any and items and any(w in lower_msg for w in ["ate", "consumed", "ration", "mre", "breakfast", "lunch", "dinner"]):
+                c_res = self.supply_engine.consume_ration(astronaut_id, items[0]["item_id"], rations_count=qty)
+                if c_res.get("success"):
+                    db_updates.append(
+                        f"Inventory DB Updated: -{qty} {c_res['item_name']} (Remaining: {c_res['remaining_quantity']} {c_res['unit']})"
+                    )
+
+        return db_updates
 
     def chat(self, astronaut_id: str, user_message: str, is_voice_input: bool = False,
              current_mood: int = 7, active_alerts: Optional[List[Dict]] = None,
@@ -1239,10 +1468,13 @@ class AstroCompanionAgent:
                 "ask_media_permission": False,
                 "play_media_now": True,
                 "media_file": fav_media,
-                "danger_triggered": False
+                "danger_triggered": False,
+                "db_updates": []
             }
 
-        system_prompt = build_master_system_prompt(astronaut_id, simulated_time, active_alerts)
+        profile = self.db.get_astronaut_by_id(astronaut_id)
+        astro_name = profile["name"] if profile else astronaut_id
+        system_prompt = build_master_system_prompt(astro_name, simulated_time, active_alerts)
         reply_text = self._query_llm(system_prompt, list(reversed(history_rows)), cleaned_msg)
 
         if not reply_text:
@@ -1262,6 +1494,8 @@ class AstroCompanionAgent:
                 reply_text = random.choice(support_options)
             else:
                 reply_text = "I am right here with you. All spacecraft systems and your vitals look stable. How are you feeling?"
+
+        db_updates = self._auto_update_db_from_intent(astronaut_id, lower_msg, reply_text)
 
         trigger_play_media = "[PLAY_MEDIA" in reply_text
         trigger_ask_media = "[ASK_MEDIA]" in reply_text or any(k in reply_text.lower() for k in [".mp3", ".mp4", ".wav", "would you like me to play", "shall i play"])
@@ -1312,7 +1546,8 @@ class AstroCompanionAgent:
             "ask_media_permission": trigger_ask_media,
             "play_media_now": trigger_play_media,
             "media_file": fav_media if trigger_play_media else None,
-            "danger_triggered": trigger_danger
+            "danger_triggered": trigger_danger,
+            "db_updates": db_updates
         }
 
     def _query_llm(self, system_prompt: str, history: List[sqlite3.Row], latest_user_msg: str) -> Optional[str]:
@@ -1373,44 +1608,3 @@ class AstroCompanionAgent:
                 return data["choices"][0]["message"]["content"]
         except Exception:
             return None
-
-
-if __name__ == "__main__":
-    db = DatabaseManager()
-    sim = SensorSimulator(db)
-    supply = DeepSpaceSupplyEngine(db)
-    rad = RadiationMonitorLogic(db)
-    alerts_mgr = DangerAlertManager(db, supply, rad)
-    routine = RoutineAndSleepTracker(db)
-    agent_ai = AstroCompanionAgent(db)
-
-    print("1. Testing Sleep & Wake-Up Alarm Calculation:")
-    routine.start_sleep_session("A004", (datetime.now(timezone.utc) - timedelta(hours=7, minutes=30)).isoformat())
-    wake_res = routine.confirm_wake_up_and_calculate_sleep("A004")
-    print("  ->", wake_res["message"])
-
-    print("\n2. Testing Ration Consumption & Stock Warning:")
-    conn = db.get_connection()
-    first_item = conn.execute("SELECT item_id FROM inventory LIMIT 1").fetchone()
-    conn.close()
-    valid_item_id = first_item["item_id"] if first_item else 1
-    cons_res = supply.consume_ration("A004", valid_item_id, rations_count=2.0)
-    print("  -> Consumed:", cons_res)
-
-    print("\n3. Testing Peer Danger Alert & Radiation Alert:")
-    sim.generate_live_vitals("A005", flight_day=30, anomaly_mode="arrhythmia")
-    v_active = sim.generate_live_vitals("A004", flight_day=30)
-    env_active = sim.generate_environment_reading()
-    sim.generate_radiation_reading(spike=True)
-
-    triggered = alerts_mgr.evaluate_all_dangers("A004", v_active, env_active, distance_km=500000.0)
-    for a in triggered:
-        print(f"  -> [{a['category']}] {a['title']}: {a['message']}")
-
-    print("\n4. Testing Voice Correction & Permission-Based Media Play:")
-    chat_1 = agent_ai.chat("A004", "I feel sad and sea oh two is fine", is_voice_input=True, current_mood=3)
-    print("  -> Corrected Transcript:", chat_1["corrected_user_input"])
-    print("  -> AI Response:", chat_1["ai_text"], "| Play Now?:", chat_1["play_media_now"])
-
-    chat_2 = agent_ai.chat("A004", "yes play song please", is_voice_input=True, current_mood=3)
-    print("  -> User Confirmed (Silent Play):", repr(chat_2["ai_text"]), "| Play Now?:", chat_2["play_media_now"], "| File:", chat_2["media_file"])
