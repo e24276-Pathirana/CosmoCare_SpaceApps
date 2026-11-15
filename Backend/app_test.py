@@ -7,6 +7,7 @@ import base64
 import speech_recognition as sr
 import tempfile
 import uuid
+from pathlib import Path
 
 st.set_page_config(page_title="CosmoCare Space Dashboard", layout="wide")
 
@@ -25,22 +26,22 @@ def init_system():
 
 db, sim, supply, rad, alerts_mgr, routine, agent = init_system()
 
-# --- Session States ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "astronaut_id" not in st.session_state:
     st.session_state.astronaut_id = "A004"
 if "active_media" not in st.session_state:
     st.session_state.active_media = None
-if "tts_audio_b64" not in st.session_state:
-    st.session_state.tts_audio_b64 = None
+if "tts_audio_bytes" not in st.session_state:
+    st.session_state.tts_audio_bytes = None
 if "last_voice_text" not in st.session_state:
     st.session_state.last_voice_text = ""
 if "last_audio_bytes" not in st.session_state:
     st.session_state.last_audio_bytes = None
+if "announce_alerts_now" not in st.session_state:
+    st.session_state.announce_alerts_now = False
 
 
-# --- Safe TTS Function (No temp_response.mp3 Crash) ---
 def generate_and_play_tts(text):
     if not text or not text.strip():
         return
@@ -55,36 +56,33 @@ def generate_and_play_tts(text):
         asyncio.run(_generate())
         if os.path.exists(temp_file):
             with open(temp_file, "rb") as f:
-                data = f.read()
-                st.session_state.tts_audio_b64 = base64.b64encode(data).decode()
+                st.session_state.tts_audio_bytes = f.read()
             os.remove(temp_file)
     except Exception:
         pass
 
 
-# --- Voice Recognition Helpers ---
-def recognize_from_local_mic():
-    """Fast & Auto-Send"""
-    recognizer = sr.Recognizer()
-    recognizer.dynamic_energy_threshold = True
-    recognizer.pause_threshold = 0.8
-    try:
-        with sr.Microphone() as source:
-            st.toast("🎤 Listening... Speak now!", icon="🎙️")
-            recognizer.adjust_for_ambient_noise(source, duration=0.3)
-            audio_data = recognizer.listen(source, timeout=6, phrase_time_limit=12)
-            raw_text = recognizer.recognize_google(audio_data)
-            return agent.voice_corrector.clean_transcript(raw_text)
-    except sr.WaitTimeoutError:
-        return "ERROR: No speech detected (Timeout)."
-    except sr.UnknownValueError:
-        return "ERROR: Could not understand audio clearly."
-    except Exception as e:
-        return f"ERROR: Mic unavailable ({e})"
+def resolve_media_path(file_path_str):
+    if not file_path_str:
+        return None
+    p1 = Path(file_path_str)
+    if p1.exists():
+        return p1
+    p2 = Path(__file__).parent / file_path_str
+    if p2.exists():
+        return p2
+    p3 = Path(__file__).parent / "assets" / "media" / p1.name
+    if p3.exists():
+        return p3
+    media_dir = Path(__file__).parent / "assets" / "media"
+    if media_dir.exists():
+        files = [f for f in media_dir.iterdir() if f.suffix.lower() in ('.mp3', '.mp4', '.wav')]
+        if files:
+            return files[0]
+    return None
 
 
 def recognize_from_browser_audio(audio_bytes):
-    """Taking the sound through the browser's mic"""
     recognizer = sr.Recognizer()
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(audio_bytes)
@@ -101,7 +99,6 @@ def recognize_from_browser_audio(audio_bytes):
             os.remove(tmp_path)
 
 
-# --- Sidebar Controls ---
 with st.sidebar:
     st.title("⚙️ Mission Controls")
     mission_hour = st.slider("Select Time (Hours)", 0, 23, 7)
@@ -116,28 +113,20 @@ with st.sidebar:
             st.rerun()
 
     st.markdown("---")
-    anomaly = st.selectbox("Trigger Anomaly", ["None", "arrhythmia", "hypovolemia", "high_co2"])
+    anomaly = st.selectbox("Trigger Anomaly", ["None", "arrhythmia", "hypovolemia", "high_co2", "radiation_spike"])
     if st.button("Generate Telemetry"):
         st.session_state.current_vitals = sim.generate_live_vitals(
-            st.session_state.astronaut_id, anomaly_mode=anomaly if anomaly != "None" else None
+            st.session_state.astronaut_id,
+            anomaly_mode=anomaly if anomaly in ("arrhythmia", "hypovolemia", "high_co2") else None
         )
         st.session_state.current_env = sim.generate_environment_reading(
             anomaly_mode="cabin_danger" if anomaly == "high_co2" else None
         )
+        sim.generate_radiation_reading(spike=(anomaly == "radiation_spike"))
+        st.session_state.announce_alerts_now = True
         st.success("Telemetry Generated!")
 
-# --- Main Dashboard ---
 st.title("🚀 CosmoCare Medical & AI Dashboard")
-
-# Play generated TTS Audio in Browser
-if st.session_state.tts_audio_b64:
-    audio_html = f"""
-        <audio autoplay="true">
-        <source src="data:audio/mp3;base64,{st.session_state.tts_audio_b64}" type="audio/mp3">
-        </audio>
-    """
-    st.markdown(audio_html, unsafe_allow_html=True)
-    st.session_state.tts_audio_b64 = None
 
 active_alerts = None
 if "current_vitals" in st.session_state:
@@ -152,20 +141,36 @@ if "current_vitals" in st.session_state:
     c4.metric("🌫️ CO2", f"{env['co2_ppm']} ppm")
 
     if active_alerts:
+        combined_voice_alerts = []
         for alert in active_alerts:
             st.error(f"**{alert['severity']} ALERT:** {alert['title']} - {alert['message']}")
-            if alert.get('play_siren'):
-                generate_and_play_tts(alert['voice_announcement'])
+            if alert.get('voice_announcement'):
+                combined_voice_alerts.append(alert['voice_announcement'])
+
+        if st.session_state.announce_alerts_now and combined_voice_alerts:
+            full_alert_speech = " ".join(combined_voice_alerts)
+            st.session_state.chat_history.append({"role": "AI", "content": f"🚨 {full_alert_speech}"})
+            generate_and_play_tts(full_alert_speech)
+            st.session_state.announce_alerts_now = False
+
+if st.session_state.tts_audio_bytes:
+    st.audio(st.session_state.tts_audio_bytes, format="audio/mp3", autoplay=True)
+    st.session_state.tts_audio_bytes = None
 
 st.markdown("---")
 st.subheader("💬 AI Companion (Auto-Send Voice & Text)")
 
-# --- Media Player & Post-Song Check-in ---
 if st.session_state.active_media:
-    actual_file = st.session_state.active_media.get("file_path", "")
-    if os.path.exists(actual_file):
-        st.success(f"🎵 Playing silently as requested: **{os.path.basename(actual_file)}**")
-        st.audio(actual_file, format="audio/mp3", autoplay=True)
+    raw_path = st.session_state.active_media.get("file_path", "")
+    resolved_path = resolve_media_path(raw_path)
+    if resolved_path and resolved_path.exists():
+        st.success(f"🎵 Playing silently as requested: **{resolved_path.name}**")
+        with open(resolved_path, "rb") as media_f:
+            media_bytes = media_f.read()
+        if resolved_path.suffix.lower() == ".mp4":
+            st.video(media_bytes, autoplay=True)
+        else:
+            st.audio(media_bytes, format="audio/mp3", autoplay=True)
 
         if st.button("✅ Song Finished (Trigger AI Check-in)"):
             st.session_state.active_media = None
@@ -173,13 +178,13 @@ if st.session_state.active_media:
             st.session_state.chat_history.append({"role": "AI", "content": followup})
             generate_and_play_tts(followup)
             st.rerun()
+    else:
+        st.warning(f"Media file not found at `{raw_path}`. Ensure `assets/media/` with `.mp3` files is uploaded to GitHub.")
 
-# --- Chat History ---
 for msg in st.session_state.chat_history:
     with st.chat_message("user" if msg["role"] == "User" else "assistant"):
         st.write(msg["content"])
 
-# --- Voice & Text Input Section (AUTO-SEND ENABLED) ---
 user_text = ""
 
 if hasattr(st, "audio_input"):
@@ -220,6 +225,7 @@ if user_text:
             generate_and_play_tts(ai_reply)
 
         if response.get("play_media_now"):
+            st.session_state.tts_audio_bytes = None
             st.session_state.active_media = response.get("media_file")
 
     st.rerun()
