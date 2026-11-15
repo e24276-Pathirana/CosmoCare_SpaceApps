@@ -222,6 +222,7 @@ html, body, [class*="css"] {
 
 .stApp {
     background: linear-gradient(135deg, #e0eafc 0%, #f5f7fb 55%, #e9f0ff 100%);
+    padding-bottom: 90px;
 }
 
 section[data-testid="stSidebar"] {
@@ -492,6 +493,86 @@ section[data-testid="stSidebar"] button {
     font-weight: 800;
     letter-spacing: 0.05em;
 }
+
+div[data-testid="stHorizontalBlock"]:has(#floating-ai-anchor) {
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 28px !important;
+    width: auto !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    background: transparent !important;
+}
+
+div[data-testid="stHorizontalBlock"]:has(#floating-ai-anchor) > div {
+    width: auto !important;
+    flex: 0 0 auto !important;
+}
+
+div[data-testid="stHorizontalBlock"]:has(#floating-ai-anchor) > div:nth-child(1) div[data-testid="stPopover"] > div > button {
+    width: 54px !important;
+    height: 54px !important;
+    min-width: 54px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #00c6ff 0%, #7f8ce8 55%, #9b5de5 100%) !important;
+    color: #ffffff !important;
+    border: 2px solid rgba(255, 255, 255, 0.85) !important;
+    box-shadow: 0 6px 18px rgba(127, 140, 232, 0.45) !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.35rem !important;
+    transition: none !important;
+    animation: none !important;
+}
+
+div[data-testid="stHorizontalBlock"]:has(#floating-ai-anchor) > div:nth-child(1) div[data-testid="stPopover"] > div > button svg {
+    display: none !important;
+}
+
+div[data-testid="stHorizontalBlock"]:has(#floating-ai-anchor) > div:nth-child(2) div[data-testid="stPopover"] > div > button {
+    height: 54px !important;
+    border-radius: 30px !important;
+    background: linear-gradient(95deg, #00d2ff 0%, #6366f1 55%, #9b5de5 100%) !important;
+    color: #ffffff !important;
+    border: 2px solid rgba(255, 255, 255, 0.85) !important;
+    padding: 0 24px !important;
+    font-weight: 800 !important;
+    font-size: 0.95rem !important;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+div[data-testid="stHorizontalBlock"]:has(#floating-ai-anchor) > div:nth-child(2) div[data-testid="stPopover"] > div > button svg {
+    display: none !important;
+}
+
+div[data-testid="stPopoverBody"] {
+    background: #0f172a !important;
+    border: 1px solid #334155 !important;
+    border-radius: 18px !important;
+    color: #f8fafc !important;
+    width: 390px !important;
+    max-width: 92vw !important;
+    box-shadow: 0 20px 45px rgba(2, 6, 23, 0.65) !important;
+    padding: 16px !important;
+}
+
+div[data-testid="stPopoverBody"] * {
+    color: #f1f5f9 !important;
+}
+
+div[data-testid="stPopoverBody"] div[data-testid="stTextInput"] input {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    border: 1px solid #06b6d4 !important;
+    border-radius: 12px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -701,6 +782,25 @@ if st.session_state.tts_audio_bytes:
     st.audio(st.session_state.tts_audio_bytes, format="audio/mp3", autoplay=True)
     st.session_state.tts_audio_bytes = None
 
+if st.session_state.active_media:
+    raw_path = st.session_state.active_media.get("file_path", "")
+    resolved_path = resolve_media_path(raw_path)
+    if resolved_path and resolved_path.exists():
+        st.success(f"🎵 Playing silently as requested: **{resolved_path.name}**")
+        with open(resolved_path, "rb") as media_f:
+            media_bytes = media_f.read()
+        if resolved_path.suffix.lower() == ".mp4":
+            st.video(media_bytes, autoplay=True)
+        else:
+            st.audio(media_bytes, format="audio/mp3", autoplay=True)
+
+        if st.button("✅ Song Finished (Trigger AI Welfare Check-in)"):
+            st.session_state.active_media = None
+            followup = "How did that feel? Did the music help you relax? Are you feeling a bit happier now, or still down?"
+            st.session_state.chat_history.append({"role": "AI", "content": followup})
+            generate_and_play_tts(followup)
+            st.rerun()
+
 if nav_page == "🏠 HOME":
     left_main, right_main = st.columns([1.15, 1.05], gap="large")
 
@@ -765,7 +865,7 @@ if nav_page == "🏠 HOME":
             st.markdown("""
             <div class="soft-card" style="padding:14px;">
                 <div class="soft-card-title" style="margin-bottom:8px;">DOCKING HATCH</div>
-                <div style="display:flex; justify-content:center; gap:14px; font-size:10px; font-size:1.1rem;">
+                <div style="display:flex; justify-content:center; gap:14px; font-size:1.1rem;">
                     <span style="background:#e0f2fe; padding:6px 12px; border-radius:10px;">🔒</span>
                     <span style="background:#f3e8ff; padding:6px 12px; border-radius:10px;">🔓</span>
                 </div>
@@ -842,80 +942,6 @@ if nav_page == "🏠 HOME":
                 <div class="toggle-pill"><span>ON</span><span style="color:#64748b;">OFF</span></div>
             </div>
             """, unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.markdown('<div class="section-heading">💬 COSMOCARE VOICE AI COMPANION &amp; SILENT MEDIA PLAYER</div>', unsafe_allow_html=True)
-
-    if st.session_state.active_media:
-        raw_path = st.session_state.active_media.get("file_path", "")
-        resolved_path = resolve_media_path(raw_path)
-        if resolved_path and resolved_path.exists():
-            st.success(f"🎵 Playing silently as requested: **{resolved_path.name}**")
-            with open(resolved_path, "rb") as media_f:
-                media_bytes = media_f.read()
-            if resolved_path.suffix.lower() == ".mp4":
-                st.video(media_bytes, autoplay=True)
-            else:
-                st.audio(media_bytes, format="audio/mp3", autoplay=True)
-
-            if st.button("✅ Song Finished (Trigger AI Welfare Check-in)"):
-                st.session_state.active_media = None
-                followup = "How did that feel? Did the music help you relax? Are you feeling a bit happier now, or still down?"
-                st.session_state.chat_history.append({"role": "AI", "content": followup})
-                generate_and_play_tts(followup)
-                st.rerun()
-        else:
-            st.warning(f"Media file not found at `{raw_path}`. Upload `.mp3` files in the Members & Profile tab.")
-
-    for msg in st.session_state.chat_history:
-        with st.chat_message("user" if msg["role"] == "User" else "assistant"):
-            st.write(msg["content"])
-
-    user_text = ""
-    if hasattr(st, "audio_input"):
-        web_audio = st.audio_input("🎙️ Tap to Speak (Auto-Corrects & Auto-Sends on Stop):")
-        if web_audio is not None:
-            audio_bytes = web_audio.getvalue()
-            if audio_bytes != st.session_state.last_audio_bytes:
-                st.session_state.last_audio_bytes = audio_bytes
-                result = recognize_from_browser_audio(audio_bytes)
-                if result.startswith("ERROR:"):
-                    st.error(result)
-                else:
-                    st.session_state.last_voice_text = result
-                    user_text = result
-
-    if st.session_state.last_voice_text:
-        st.caption(f"✨ **Auto-Corrected Voice Transcript Sent:** `{st.session_state.last_voice_text}`")
-
-    typed_input = st.chat_input("Speak via mic or type here (e.g., 'I feel sad', 'I ate 2 Rice rations', 'I am awake')...")
-    if typed_input:
-        st.session_state.last_voice_text = ""
-        user_text = typed_input
-
-    if user_text:
-        st.session_state.chat_history.append({"role": "User", "content": user_text})
-        with st.spinner("CosmoCare AI is responding..."):
-            response = agent.chat(
-                st.session_state.astronaut_id,
-                user_text,
-                is_voice_input=True,
-                active_alerts=active_alerts,
-                simulated_time=simulated_time
-            )
-            if response.get("db_updates"):
-                for upd in response["db_updates"]:
-                    st.toast(f"🗄️ {upd}", icon="✅")
-
-            ai_reply = response["ai_text"]
-            if ai_reply:
-                st.session_state.chat_history.append({"role": "AI", "content": ai_reply})
-                generate_and_play_tts(ai_reply)
-
-            if response.get("play_media_now"):
-                st.session_state.tts_audio_bytes = None
-                st.session_state.active_media = response.get("media_file")
-        st.rerun()
 
 elif nav_page == "📊 STATISTICS & TRIAGE":
     st.subheader(f"📊 Clinical Status ({active_profile.get('name')}): {triage_info['status_level']} — {triage_info['diagnosis']}")
@@ -1017,3 +1043,85 @@ elif nav_page == "💡 LIGHTS, SLEEP & RATIONS":
     st.dataframe(inv_eval["items"], use_container_width=True)
     st.caption("Recent Sleep Sessions (`sleep_sessions` table):")
     st.dataframe(sleep_logs, use_container_width=True)
+
+user_text = ""
+voice_col, chat_col = st.columns([1, 1])
+
+with voice_col:
+    st.markdown('<div id="floating-ai-anchor"></div>', unsafe_allow_html=True)
+    with st.popover("🎙️"):
+        st.markdown("**🎙️ Voice Channel — Speak to CosmoCare AI**")
+        if hasattr(st, "audio_input"):
+            web_audio = st.audio_input("Tap Mic & Speak (Auto-Sends on Stop):", label_visibility="collapsed")
+            if web_audio is not None:
+                audio_bytes = web_audio.getvalue()
+                if audio_bytes != st.session_state.last_audio_bytes:
+                    st.session_state.last_audio_bytes = audio_bytes
+                    result = recognize_from_browser_audio(audio_bytes)
+                    if result.startswith("ERROR:"):
+                        st.error(result)
+                    else:
+                        st.session_state.last_voice_text = result
+                        user_text = result
+        if st.session_state.last_voice_text:
+            st.caption(f"✨ Sent: `{st.session_state.last_voice_text}`")
+
+with chat_col:
+    with st.popover("💬 Mental Health AI"):
+        st.markdown("""
+        <div style="border-bottom:1px solid #334155; padding-bottom:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:800; color:#38bdf8;">💬 Mental Health AI</span>
+            <span style="font-size:0.7rem; color:#10b981;">● Encrypted Channel</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        chat_box = st.container(height=280)
+        with chat_box:
+            if not st.session_state.chat_history:
+                st.caption("Hello! I am CosmoCare. Type a message or use the circular mic icon to speak with me.")
+            for msg in st.session_state.chat_history:
+                align = "right" if msg["role"] == "User" else "left"
+                bg = "linear-gradient(135deg, #00c6ff, #0072ff)" if msg["role"] == "User" else "#1e293b"
+                st.markdown(f"""
+                <div style="text-align:{align}; margin-bottom:8px;">
+                    <div style="display:inline-block; background:{bg}; color:#ffffff; padding:8px 13px; border-radius:14px; max-width:85%; text-align:left; font-size:0.84rem;">
+                        {msg['content']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        with st.form("popup_chat_form", clear_on_submit=True):
+            c_in, c_send = st.columns([4.2, 1])
+            with c_in:
+                typed_msg = st.text_input("Message", placeholder="Test dialogue message...", label_visibility="collapsed")
+            with c_send:
+                send_btn = st.form_submit_button("➤")
+            if send_btn and typed_msg.strip():
+                st.session_state.last_voice_text = ""
+                user_text = typed_msg.strip()
+
+        st.markdown('<div style="font-size:0.68rem; color:#64748b; margin-top:6px;">🛡️ Encrypted Psychological Channel • Mission Medical Rule 4.12</div>', unsafe_allow_html=True)
+
+if user_text:
+    st.session_state.chat_history.append({"role": "User", "content": user_text})
+    with st.spinner("CosmoCare AI is responding..."):
+        response = agent.chat(
+            st.session_state.astronaut_id,
+            user_text,
+            is_voice_input=True,
+            active_alerts=active_alerts,
+            simulated_time=simulated_time
+        )
+        if response.get("db_updates"):
+            for upd in response["db_updates"]:
+                st.toast(f"🗄️ {upd}", icon="✅")
+
+        ai_reply = response["ai_text"]
+        if ai_reply:
+            st.session_state.chat_history.append({"role": "AI", "content": ai_reply})
+            generate_and_play_tts(ai_reply)
+
+        if response.get("play_media_now"):
+            st.session_state.tts_audio_bytes = None
+            st.session_state.active_media = response.get("media_file")
+    st.rerun()
