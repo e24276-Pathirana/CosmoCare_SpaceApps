@@ -8,7 +8,7 @@ import tempfile
 import uuid
 from pathlib import Path
 
-st.set_page_config(page_title="SpaceStation AI — Command Console", page_icon="🛰️", layout="wide")
+st.set_page_config(page_title="CosmoCare Smart Space Habitat", page_icon="🚀", layout="wide")
 
 
 @st.cache_resource
@@ -46,7 +46,7 @@ if "announce_alerts_now" not in st.session_state:
 if st.session_state.authenticated_user is None:
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
@@ -126,10 +126,6 @@ if st.session_state.authenticated_user is None:
         box-shadow: 0 4px 14px rgba(27, 61, 142, 0.4) !important;
     }
 
-    div[data-testid="stFormSubmitButton"] button:hover {
-        background: #122b69 !important;
-    }
-
     .demo-creds-box {
         background: rgba(15, 29, 68, 0.55);
         border: 1px solid rgba(255, 255, 255, 0.22);
@@ -174,7 +170,6 @@ if st.session_state.authenticated_user is None:
                 <rect x="0" y="195" width="500" height="85" fill="url(#lakeGrad)"/>
                 <ellipse cx="285" cy="215" rx="55" ry="4" fill="#6b96d6" opacity="0.35"/>
                 <ellipse cx="285" cy="228" rx="38" ry="3" fill="#6b96d6" opacity="0.25"/>
-                <ellipse cx="285" cy="240" rx="22" ry="2.5" fill="#6b96d6" opacity="0.2"/>
                 <text x="250" y="96" fill="#ffffff" font-size="22" font-weight="700" font-family="Inter, sans-serif" text-anchor="middle">Welcome to CosmoCare</text>
                 <text x="250" y="118" fill="#cbd5e1" font-size="10.5" font-family="Inter, sans-serif" text-anchor="middle">Autonomous Space Station Medical &amp; AI Companion</text>
             </svg>
@@ -183,7 +178,7 @@ if st.session_state.authenticated_user is None:
 
         with st.form("astronaut_login_form"):
             st.markdown('<div class="login-heading">USER LOGIN</div>', unsafe_allow_html=True)
-            input_user = st.text_input("👤 User ID / Astronaut ID", placeholder="Enter ID (e.g., A004, A005, A006)")
+            input_user = st.text_input("👤 User name / Astronaut ID", placeholder="Enter ID (e.g., A004, A005, A006)")
             input_pass = st.text_input("🔒 Password", type="password", placeholder="Enter Password")
             c_rem, c_forgot = st.columns(2)
             with c_rem:
@@ -191,8 +186,8 @@ if st.session_state.authenticated_user is None:
             with c_forgot:
                 st.markdown('<div style="text-align:right; font-size:0.8rem; color:#3b5fa8; padding-top:6px;">Forgot password?</div>', unsafe_allow_html=True)
 
-            login_Clicked = st.form_submit_button("Log in")
-            if login_Clicked:
+            login_clicked = st.form_submit_button("Log in")
+            if login_clicked:
                 auth_user = db.authenticate_user(input_user, input_pass)
                 if auth_user:
                     st.session_state.authenticated_user = auth_user
@@ -207,9 +202,9 @@ if st.session_state.authenticated_user is None:
         st.markdown("""
         <div class="demo-creds-box">
             <strong>Crew Login Credentials:</strong><br>
-            • <code>A004</code> (Dr. Sarah Mitchell) — Pass: <code>Sarah@2026</code><br>
-            • <code>A005</code> (Cmdr. James Holden) — Pass: <code>Holden@2026</code><br>
-            • <code>A006</code> (Eng. Elena Rostova) — Pass: <code>Elena@2026</code>
+            • <code>A004</code> (Dr. Sarah Mitchell - Female) — Pass: <code>Sarah@2026</code><br>
+            • <code>A005</code> (Cmdr. James Holden - Male) — Pass: <code>Holden@2026</code><br>
+            • <code>A006</code> (Eng. Elena Rostova - Female) — Pass: <code>Elena@2026</code>
         </div>
         """, unsafe_allow_html=True)
 
@@ -218,283 +213,329 @@ if st.session_state.authenticated_user is None:
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap');
 
 html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-    background-color: #0b0f19;
-    color: #e2e8f0;
+    font-family: 'Nunito', sans-serif;
+    color: #334155;
 }
 
 .stApp {
-    background: radial-gradient(circle at 15% 15%, #111a2e 0%, #0b0f19 60%, #070a12 100%);
+    background: linear-gradient(135deg, #e0eafc 0%, #f5f7fb 55%, #e9f0ff 100%);
 }
 
 section[data-testid="stSidebar"] {
-    background-color: #0d1322 !important;
-    border-right: 1px solid #1e293b;
+    background: linear-gradient(180deg, #0088cc 0%, #0099dd 55%, #0077b6 100%) !important;
+    border-right: none !important;
+    box-shadow: 6px 0 24px rgba(0, 119, 182, 0.18);
+}
+
+section[data-testid="stSidebar"] * {
+    color: #ffffff !important;
 }
 
 div[data-testid="stRadio"] > div {
-    gap: 6px;
+    gap: 8px;
 }
 
 div[data-testid="stRadio"] label {
-    background-color: transparent;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+    font-weight: 700 !important;
     transition: all 0.2s ease;
-    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
 }
 
 div[data-testid="stRadio"] label:hover {
-    background-color: rgba(6, 182, 212, 0.08);
-    border-color: rgba(6, 182, 212, 0.25);
+    background: rgba(255, 255, 255, 0.28) !important;
+    transform: translateX(3px);
 }
 
-.top-header-bar {
+section[data-testid="stSidebar"] button {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    border-radius: 12px !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.top-search-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(17, 24, 39, 0.85);
-    border: 1px solid #1e293b;
-    border-radius: 12px;
-    padding: 14px 22px;
-    margin-bottom: 20px;
-}
-
-.header-title-wrap {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.header-main-title {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: #f8fafc;
-    margin: 0;
-}
-
-.badge-nominal {
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.35);
-    padding: 3px 10px;
-    border-radius: 6px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-}
-
-.badge-alert {
-    background: rgba(239, 68, 68, 0.18);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.45);
-    padding: 3px 10px;
-    border-radius: 6px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-}
-
-.header-sub {
-    font-size: 0.8rem;
-    color: #94a3b8;
-    margin-top: 4px;
-}
-
-.pill-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.env-pill {
-    background: #131c2e;
-    border: 1px solid #263554;
+    background: #ffffff;
     border-radius: 20px;
-    padding: 6px 14px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.78rem;
-    color: #cbd5e1;
+    padding: 12px 24px;
+    box-shadow: 0 6px 20px rgba(148, 163, 184, 0.15);
+    margin-bottom: 22px;
+    border: 1px solid #e2e8f0;
 }
 
-.ai-pill-badge {
-    background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
-    color: #04131a;
-    font-weight: 700;
-    border-radius: 20px;
-    padding: 6px 16px;
-    font-size: 0.8rem;
-    box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
-}
-
-.metric-card {
-    background: #111827;
-    border: 1px solid #1f2937;
-    border-radius: 12px;
-    padding: 18px 20px;
-    position: relative;
-    transition: border-color 0.2s;
-}
-
-.metric-card:hover {
-    border-color: #06b6d4;
-}
-
-.metric-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.72rem;
-    font-weight: 600;
+.search-pill {
+    background: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 25px;
+    padding: 8px 28px;
+    width: 340px;
+    text-align: center;
+    color: #0284c7;
+    font-weight: 800;
     letter-spacing: 0.08em;
-    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.top-icons {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.icon-badge {
+    background: #f1f5f9;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    position: relative;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+}
+
+.badge-dot {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    background: #f59e0b;
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.welcome-banner {
+    background: linear-gradient(95deg, #2cb5e8 0%, #7f8ce8 52%, #b86de6 100%);
+    border-radius: 22px;
+    padding: 24px 28px 0 28px;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    box-shadow: 0 12px 28px rgba(127, 140, 232, 0.32);
+    margin-bottom: 22px;
+    min-height: 195px;
+    overflow: hidden;
+}
+
+.welcome-text-block {
+    padding-bottom: 24px;
+    max-width: 62%;
+}
+
+.welcome-title {
+    font-size: 1.7rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.03em;
+    margin-bottom: 10px;
+    color: #ffffff;
     text-transform: uppercase;
 }
 
-.metric-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.95rem;
-    background: rgba(6, 182, 212, 0.12);
-    color: #22d3ee;
-    border: 1px solid rgba(6, 182, 212, 0.25);
+.welcome-sub {
+    font-size: 0.86rem;
+    color: rgba(255, 255, 255, 0.92);
+    line-height: 1.45;
 }
 
-.metric-val {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 1.65rem;
-    font-weight: 700;
-    color: #f8fafc;
-    margin: 8px 0 4px 0;
-}
-
-.metric-sub {
-    font-size: 0.78rem;
-    color: #64748b;
-}
-
-.console-panel {
-    background: #111827;
-    border: 1px solid #1e293b;
-    border-radius: 14px;
+.soft-card {
+    background: #ffffff;
+    border-radius: 22px;
     padding: 20px;
-    margin-bottom: 16px;
+    border: 1.5px solid #e2e8f0;
+    box-shadow: 0 8px 22px rgba(148, 163, 184, 0.12);
+    text-align: center;
+    margin-bottom: 18px;
 }
 
-.panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #1e293b;
-}
-
-.panel-title {
-    font-size: 1.02rem;
-    font-weight: 700;
-    color: #f1f5f9;
-}
-
-.panel-subtitle {
-    font-size: 0.76rem;
-    color: #64748b;
-}
-
-.timeline-item {
-    display: flex;
-    gap: 14px;
-    margin-bottom: 12px;
-    align-items: flex-start;
-}
-
-.timeline-time {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-    color: #38bdf8;
-    min-width: 52px;
-    padding-top: 10px;
-}
-
-.timeline-box {
-    flex: 1;
-    background: #161f33;
-    border: 1px solid #263554;
-    border-radius: 10px;
-    padding: 12px 16px;
-}
-
-.timeline-box-active {
-    flex: 1;
-    background: rgba(6, 182, 212, 0.09);
-    border: 1px solid #06b6d4;
-    border-radius: 10px;
-    padding: 12px 16px;
-    box-shadow: 0 0 18px rgba(6, 182, 212, 0.12);
-}
-
-.timeline-title {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: #f1f5f9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.tag-meal {
-    background: rgba(245, 158, 11, 0.16);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.35);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.65rem;
-    font-weight: 700;
-}
-
-.tag-rest {
-    background: rgba(168, 85, 247, 0.16);
-    color: #c084fc;
-    border: 1px solid rgba(168, 85, 247, 0.35);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.65rem;
-    font-weight: 700;
-}
-
-.crew-footer {
-    background: #131c2e;
-    border: 1px solid #1e293b;
-    border-radius: 10px;
-    padding: 10px 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 14px;
-    margin-bottom: 10px;
-}
-
-.crew-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #06b6d4, #3b82f6);
-    color: #0b0f19;
+.soft-card-title {
+    font-size: 0.82rem;
     font-weight: 800;
+    color: #0284c7;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.temp-circle {
+    width: 138px;
+    height: 138px;
+    border-radius: 50%;
+    margin: 0 auto 14px auto;
+    background: #ffffff;
+    border: 10px solid #f1f5f9;
+    box-shadow: inset 0 4px 12px rgba(0,0,0,0.06), 0 6px 16px rgba(127, 140, 232, 0.18);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.temp-val {
+    font-size: 2.0rem;
+    font-weight: 800;
+    color: #6366f1;
+}
+
+.pie-circle {
+    width: 138px;
+    height: 138px;
+    border-radius: 50%;
+    margin: 0 auto 14px auto;
+    background: conic-gradient(
+        #f97316 0% 10%,
+        #facc15 10% 25%,
+        #a855f7 25% 50%,
+        #22b8cf 50% 100%
+    );
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 6px 16px rgba(148, 163, 184, 0.25);
+    position: relative;
+}
+
+.pie-legend {
+    display: flex;
+    justify-content: space-around;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-top: 8px;
+}
+
+.section-heading {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0284c7;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.device-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 16px 18px;
+    border: 1.5px solid #e2e8f0;
+    box-shadow: 0 6px 18px rgba(148, 163, 184, 0.11);
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+.device-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #0284c7;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+}
+
+.toggle-pill {
+    display: inline-flex;
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, #a855f7 50%, #e2e8f0 50%);
+    color: #ffffff;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.room-grid {
+    background: #ffffff;
+    border-radius: 22px;
+    padding: 18px;
+    border: 1.5px solid #e2e8f0;
+    box-shadow: 0 8px 22px rgba(148, 163, 184, 0.12);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.room-pill-active {
+    background: linear-gradient(90deg, #0284c7, #a855f7);
+    color: #ffffff;
+    border-radius: 20px;
+    padding: 9px 14px;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+}
+
+.room-pill-soft {
+    background: linear-gradient(90deg, #bae6fd, #e9d5ff);
+    color: #0369a1;
+    border-radius: 20px;
+    padding: 9px 14px;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
 }
 </style>
 """, unsafe_allow_html=True)
+
+
+def get_gender_cartoon_svg(sex_str: str) -> str:
+    if str(sex_str).strip().lower() == "female":
+        return """
+        <svg width="165" height="175" viewBox="0 0 180 190" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+            <path d="M42,88 C38,40 142,40 138,88 C144,128 148,155 135,172 L45,172 C32,155 36,128 42,88 Z" fill="#2d1b4e"/>
+            <circle cx="90" cy="30" r="20" fill="#2d1b4e"/>
+            <path d="M35,190 C38,142 142,142 145,190 Z" fill="#0284c7"/>
+            <path d="M68,145 L90,168 L112,145 Z" fill="#e0f2fe"/>
+            <rect x="79" y="116" width="22" height="32" rx="10" fill="#ffcdb2"/>
+            <ellipse cx="90" cy="86" rx="34" ry="38" fill="#ffddd2"/>
+            <path d="M54,75 C62,48 118,48 126,75 C115,60 65,60 54,75 Z" fill="#2d1b4e"/>
+            <circle cx="76" cy="84" r="3.8" fill="#1e293b"/>
+            <circle cx="104" cy="84" r="3.8" fill="#1e293b"/>
+            <path d="M72,74 Q76,70 81,74" stroke="#2d1b4e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M99,74 Q104,70 108,74" stroke="#2d1b4e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <ellipse cx="67" cy="94" rx="6" ry="3.5" fill="#f43f5e" opacity="0.35"/>
+            <ellipse cx="113" cy="94" rx="6" ry="3.5" fill="#f43f5e" opacity="0.35"/>
+            <path d="M81,101 Q90,110 99,101" stroke="#e11d48" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="55" cy="92" r="4" fill="#fbbf24"/>
+            <circle cx="125" cy="92" r="4" fill="#fbbf24"/>
+        </svg>
+        """
+    return """
+    <svg width="165" height="175" viewBox="0 0 180 190" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+        <path d="M32,190 C36,140 144,140 148,190 Z" fill="#0369a1"/>
+        <path d="M72,144 L90,164 L108,144 Z" fill="#38bdf8"/>
+        <rect x="78" y="116" width="24" height="32" rx="10" fill="#f5ebe0"/>
+        <ellipse cx="54" cy="88" rx="6" ry="10" fill="#f5cbb7"/>
+        <ellipse cx="126" cy="88" rx="6" ry="10" fill="#f5cbb7"/>
+        <ellipse cx="90" cy="86" rx="35" ry="39" fill="#ffddd2"/>
+        <path d="M53,78 C50,42 130,38 127,78 C122,56 95,52 68,58 C58,60 55,68 53,78 Z" fill="#1e1b4b"/>
+        <circle cx="76" cy="85" r="3.8" fill="#1e293b"/>
+        <circle cx="104" cy="85" r="3.8" fill="#1e293b"/>
+        <path d="M70,74 Q76,71 82,74" stroke="#1e1b4b" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M98,74 Q104,71 110,74" stroke="#1e1b4b" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <ellipse cx="67" cy="94" rx="5.5" ry="3" fill="#fb7185" opacity="0.35"/>
+        <ellipse cx="113" cy="94" rx="5.5" ry="3" fill="#fb7185" opacity="0.35"/>
+        <path d="M80,102 Q90,110 100,102" stroke="#e11d48" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    </svg>
+    """
 
 
 def generate_and_play_tts(text):
@@ -567,34 +608,24 @@ active_profile = db.get_astronaut_by_id(st.session_state.astronaut_id) or {}
 mission_state = db.get_mission_state()
 
 with st.sidebar:
-    st.markdown("""
-    <div style="display:flex; align-items:center; gap:12px; padding-bottom:14px; border-bottom:1px solid #1e293b; margin-bottom:14px;">
-        <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#06b6d4,#2563eb); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">🛰️</div>
-        <div>
-            <div style="font-weight:700; font-size:1.05rem; color:#f8fafc;">SpaceStation AI</div>
-            <div style="font-size:0.7rem; color:#64748b; font-family:'JetBrains Mono',monospace;">CS-OS v4.2 • COSMOCARE</div>
-        </div>
-    </div>
-    <div style="font-size:0.68rem; font-weight:700; color:#475569; letter-spacing:0.1em; margin-bottom:8px;">OPERATIONS CONSOLE</div>
-    """, unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align:center; margin-bottom:14px;'>🛰️ COSMOCARE</h3>", unsafe_allow_html=True)
 
     nav_page = st.radio(
-        "Navigation",
+        "Menu",
         [
-            "🎛️ Command Overview",
-            "📅 Daily Schedule & Exercise",
-            "🍽️ Diet, Hydration & Supply",
-            "🌙 Sleep Timer & Alarm",
-            "🩺 Medical Triage & Waveforms",
-            "💬 Mental Health & Voice AI",
-            "🔐 Crew Profile & Media Vault"
+            "🏠 HOME",
+            "📊 STATISTICS & TRIAGE",
+            "🛡️ SECURITY & ALERTS",
+            "👥 MEMBERS & PROFILE",
+            "💡 LIGHTS, SLEEP & RATIONS"
         ],
+        index=0,
         label_visibility="collapsed"
     )
 
     st.markdown("---")
-    st.caption("⚡ **QUICK TELEMETRY & CLOCK CONTROLS**")
-    mission_hour = st.slider("Ship Clock (UTC Hours)", 0, 23, int(mission_state.get("ship_time", "08:00").split(":")[0]))
+    st.caption("⚙️ **SIMULATION CONTROLS**")
+    mission_hour = st.slider("Ship Clock (Hours)", 0, 23, int(mission_state.get("ship_time", "08:00").split(":")[0]))
     simulated_time = f"{mission_hour:02d}:00"
     db.set_mission_state("ship_time", simulated_time)
 
@@ -602,8 +633,8 @@ with st.sidebar:
     db.set_mission_state("distance_million_km", str(distance_m_km))
     distance_km = distance_m_km * 1_000_000.0
 
-    anomaly = st.selectbox("Simulate Condition", ["None", "arrhythmia", "hypovolemia", "high_co2", "radiation_spike"])
-    if st.button("⚡ Pulse Live Telemetry", use_container_width=True):
+    anomaly = st.selectbox("Trigger Anomaly", ["None", "arrhythmia", "hypovolemia", "high_co2", "radiation_spike"])
+    if st.button("⚡ Pulse Telemetry", use_container_width=True):
         st.session_state.current_vitals = sim.generate_live_vitals(
             st.session_state.astronaut_id,
             anomaly_mode=anomaly if anomaly in ("arrhythmia", "hypovolemia", "high_co2") else None
@@ -615,18 +646,15 @@ with st.sidebar:
         st.session_state.announce_alerts_now = True
         st.rerun()
 
-    initials = "".join([p[0] for p in active_profile.get("name", "S M").split()[:2]])
-    st.markdown(f"""
-    <div class="crew-footer">
-        <div class="crew-avatar">{initials}</div>
-        <div>
-            <div style="font-weight:600; font-size:0.85rem; color:#f1f5f9;">{active_profile.get('name', 'Dr. Sarah Mitchell')}</div>
-            <div style="font-size:0.72rem; color:#64748b;">{st.session_state.astronaut_id} • {active_profile.get('role', '')}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    clock_event = agent.get_proactive_clock_prompt(simulated_time, active_profile.get("name", "Astronaut"))
+    if clock_event:
+        if st.button(f"🔔 Trigger {simulated_time} Prompt", use_container_width=True):
+            st.session_state.chat_history.append({"role": "AI", "content": clock_event["voice_text"]})
+            generate_and_play_tts(clock_event["voice_text"])
+            st.rerun()
 
-    if st.button("🚪 Log Out", use_container_width=True):
+    st.markdown("---")
+    if st.button("🚪 LOG OUT", use_container_width=True):
         st.session_state.authenticated_user = None
         st.session_state.astronaut_id = None
         st.rerun()
@@ -635,72 +663,26 @@ v = st.session_state.current_vitals
 env = st.session_state.current_env
 active_alerts = alerts_mgr.evaluate_all_dangers(st.session_state.astronaut_id, v, env, distance_km=distance_km)
 triage_info = logic.BioAstronauticsLogic.evaluate_triage(v)
+derived_bio = db.calculate_derived_biometrics(active_profile)
 
-status_badge_html = (
-    '<span class="badge-nominal">EXPEDITION 73 • NOMINAL</span>'
-    if not active_alerts
-    else f'<span class="badge-alert">ALERT ACTIVE • {len(active_alerts)} WARNINGS</span>'
-)
+alert_count = len(active_alerts) if active_alerts else 1
+first_name = active_profile.get("name", "Brandon").split()[-1].upper()
+sex_val = active_profile.get("sex", "Female")
+avatar_svg = get_gender_cartoon_svg(sex_val)
 
 st.markdown(f"""
-<div class="top-header-bar">
-    <div>
-        <div class="header-title-wrap">
-            <h1 class="header-main-title">Space Station Command Console</h1>
-            {status_badge_html}
-        </div>
-        <div class="header-sub">
-            Logged in: <strong style="color:#e2e8f0;">{active_profile.get('name', 'Dr. Sarah Mitchell')}</strong> • 
-            ID: <strong style="color:#38bdf8;">{st.session_state.astronaut_id}</strong> • 
-            Role: <strong style="color:#cbd5e1;">{active_profile.get('role', 'Mission Specialist')}</strong> • 
-            Fitness: <strong style="color:#10b981;">{active_profile.get('fitness_level', 'High')}</strong> • 
-            Ship Time: <strong style="color:#f8fafc;">{simulated_time} UTC</strong>
-        </div>
+<div class="top-search-bar">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <div class="search-pill">SEARCH • {st.session_state.astronaut_id} ({simulated_time})</div>
+        <span style="font-size:1.3rem;">🔍</span>
     </div>
-    <div class="pill-group">
-        <div class="env-pill"><span style="color:#10b981;">●</span> O₂ {env['oxygen_percent']}%</div>
-        <div class="env-pill"><span style="color:#38bdf8;">●</span> Cabin {env['pressure_kpa']} kPa</div>
-        <div class="env-pill"><span style="color:#f59e0b;">●</span> CO₂ {env['co2_ppm']} ppm</div>
-        <div class="ai-pill-badge">💬 Mental Health AI</div>
+    <div class="top-icons">
+        <div class="icon-badge">👤<div class="badge-dot" style="background:#0ea5e9;">3</div></div>
+        <div class="icon-badge">🔔<div class="badge-dot">{alert_count}</div></div>
+        <div class="icon-badge">☰</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
-
-mc1, mc2, mc3, mc4 = st.columns(4)
-with mc1:
-    st.markdown(f"""
-    <div class="metric-card">
-        <div class="metric-top"><span>EXPEDITION 73</span><div class="metric-icon">📅</div></div>
-        <div class="metric-val">DAY {v.flight_day}</div>
-        <div class="metric-sub">Day of the Mission (MET)</div>
-    </div>
-    """, unsafe_allow_html=True)
-with mc2:
-    st.markdown(f"""
-    <div class="metric-card">
-        <div class="metric-top"><span>DEEP SPACE TRANSIT</span><div class="metric-icon">🛰️</div></div>
-        <div class="metric-val">{distance_m_km:.1f}M km</div>
-        <div class="metric-sub">Distance from Earth</div>
-    </div>
-    """, unsafe_allow_html=True)
-with mc3:
-    st.markdown(f"""
-    <div class="metric-card">
-        <div class="metric-top"><span>CARDIO TELEMETRY</span><div class="metric-icon">💓</div></div>
-        <div class="metric-val">{v.hr} bpm</div>
-        <div class="metric-sub">BP: {v.sbp}/{v.dbp} mmHg • HRV: {v.hrv} ms</div>
-    </div>
-    """, unsafe_allow_html=True)
-with mc4:
-    st.markdown(f"""
-    <div class="metric-card">
-        <div class="metric-top"><span>BIOMETRIC PROFILE</span><div class="metric-icon">🧬</div></div>
-        <div class="metric-val">{active_profile.get('weight_kg', 65.0)} kg</div>
-        <div class="metric-sub">Height: {active_profile.get('height_cm', 170.5)} cm • Blood: {active_profile.get('blood_type', 'O+')}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.write("")
 
 if active_alerts:
     combined_voice_alerts = []
@@ -719,101 +701,150 @@ if st.session_state.tts_audio_bytes:
     st.audio(st.session_state.tts_audio_bytes, format="audio/mp3", autoplay=True)
     st.session_state.tts_audio_bytes = None
 
-schedules = db.get_schedules()
-derived_bio = db.calculate_derived_biometrics(active_profile)
+if nav_page == "🏠 HOME":
+    left_main, right_main = st.columns([1.15, 1.05], gap="large")
 
-if nav_page in ("🎛️ Command Overview", "📅 Daily Schedule & Exercise"):
-    col_left, col_right = st.columns([1.05, 1])
-
-    with col_left:
-        st.markdown("""
-        <div class="console-panel">
-            <div class="panel-header">
-                <div>
-                    <div class="panel-title">📅 Daily Mission Timeline</div>
-                    <div class="panel-subtitle">Coordinated Universal Time (UTC) • Proactive Voice Schedule</div>
+    with left_main:
+        st.markdown(f"""
+        <div class="welcome-banner">
+            <div class="welcome-text-block">
+                <div class="welcome-title">WELCOME<br>BACK, {first_name}</div>
+                <div class="welcome-sub">
+                    Role: <strong>{active_profile.get('role', 'Mission Specialist')}</strong> ({sex_val})<br>
+                    Heart Rate: <strong>{v.hr} bpm</strong> • BP: <strong>{v.sbp}/{v.dbp} mmHg</strong><br>
+                    BMI: <strong>{derived_bio['bmi']}</strong> • Target: <strong>{derived_bio['daily_kcal_target']} kcal/day</strong>
                 </div>
-                <span class="badge-nominal">ALL EVENTS</span>
             </div>
+            <div>{avatar_svg}</div>
+        </div>
         """, unsafe_allow_html=True)
 
-        for s in schedules:
-            is_now = s["time_slot"].startswith(f"{mission_hour:02d}:")
-            box_cls = "timeline-box-active" if is_now else "timeline-box"
-            tag_cls = "tag-meal" if any(k in s["event_title"].lower() for k in ["breakfast", "lunch", "dinner", "nutrition"]) else "tag-rest"
-            tag_label = "MEAL" if tag_cls == "tag-meal" else "ROUTINE"
-            status_dot = '<div style="color:#10b981; font-size:0.7rem; font-weight:700; margin-top:6px;">● IN PROGRESS NOW</div>' if is_now else ""
-
+        c_temp, c_stat = st.columns(2)
+        with c_temp:
             st.markdown(f"""
-            <div class="timeline-item">
-                <div class="timeline-time">{s['time_slot']}</div>
-                <div class="{box_cls}">
-                    <div class="timeline-title">
-                        <span>{s['event_title']}</span>
-                        <span class="{tag_cls}">{tag_label}</span>
-                    </div>
-                    <div style="font-size:0.78rem; color:#94a3b8; margin-top:4px;">{s['voice_prompt']}</div>
-                    {status_dot}
+            <div class="soft-card">
+                <div class="soft-card-title">TEMPERATURE &amp; O₂</div>
+                <div class="temp-circle">
+                    <div class="temp-val">{env['temperature_c']}°C</div>
+                    <div style="font-size:0.72rem; color:#94a3b8; font-weight:700;">O₂: {env['oxygen_percent']}%</div>
+                </div>
+                <div style="font-size:0.78rem; color:#64748b; font-weight:700;">— ───●─── +</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with c_stat:
+            st.markdown(f"""
+            <div class="soft-card">
+                <div class="soft-card-title">STATISTICS</div>
+                <div class="pie-circle">
+                    <div style="color:#ffffff; font-weight:800; font-size:0.85rem; text-shadow:0 1px 4px rgba(0,0,0,0.4);">50% | 25%</div>
+                </div>
+                <div class="pie-legend">
+                    <span><span style="color:#22b8cf;">■</span> OXYGEN</span>
+                    <span><span style="color:#facc15;">■</span> POWER</span>
+                </div>
+                <div class="pie-legend">
+                    <span><span style="color:#f97316;">■</span> RATIONS</span>
+                    <span><span style="color:#a855f7;">■</span> WATER</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        clock_event = agent.get_proactive_clock_prompt(simulated_time, active_profile.get("name", "Astronaut"))
-        if clock_event:
-            if st.button(f"🔔 Announce {simulated_time} Scheduled Voice Prompt", use_container_width=True):
-                st.session_state.chat_history.append({"role": "AI", "content": clock_event["voice_text"]})
-                generate_and_play_tts(clock_event["voice_text"])
-                st.rerun()
-
-    with col_right:
-        st.markdown(f"""
-        <div class="console-panel">
-            <div class="panel-header">
-                <div>
-                    <div class="panel-title">🏋️ Exercise Routine & Countermeasures</div>
-                    <div class="panel-subtitle">ARED Resistive & CEVIS / T2 Aerobic • Target Load: {triage_info['ared_mod']}%</div>
+        c_door1, c_door2 = st.columns(2)
+        with c_door1:
+            st.markdown("""
+            <div class="soft-card" style="padding:14px;">
+                <div class="soft-card-title" style="margin-bottom:8px;">FRONT AIRLOCK</div>
+                <div style="display:flex; justify-content:center; gap:14px; font-size:1.1rem;">
+                    <span style="background:#e0f2fe; padding:6px 12px; border-radius:10px;">🔒</span>
+                    <span style="background:#f3e8ff; padding:6px 12px; border-radius:10px;">🔓</span>
                 </div>
-                <span class="badge-nominal">ACTIVE PROTOCOL</span>
             </div>
-        """, unsafe_allow_html=True)
-
-        ex_done_1 = st.checkbox("CEVIS Cycle Ergometer (Cardio) — 30 min interval training (Target HR: 145 bpm)", value=True)
-        ex_done_2 = st.checkbox("T2 Treadmill Vibration-Isolated Run — 30 min bungee harness running (8.5 km/h)", value=False)
-        ex_done_3 = st.checkbox("ARED Bench Press & Squat — 4 sets × 10 reps (Upper/Lower axial loading)", value=False)
-        ex_done_4 = st.checkbox("Core Microgravity Stabilization — 15 min anti-rotation & postural bracing", value=False)
-
-        pct = int((sum([ex_done_1, ex_done_2, ex_done_3, ex_done_4]) / 4.0) * 100)
-        st.progress(pct / 100.0, text=f"Daily Microgravity Countermeasure Target: {pct}% Complete")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown(f"""
-        <div class="console-panel">
-            <div class="panel-header">
-                <div class="panel-title">🥗 Personalized Diet & Nutritional Flight Plan ({active_profile.get('name')})</div>
-                <span style="color:#fbbf24; font-family:'JetBrains Mono',monospace; font-size:0.85rem;">~{derived_bio['daily_kcal_target']} kcal Target</span>
+            """, unsafe_allow_html=True)
+        with c_door2:
+            st.markdown("""
+            <div class="soft-card" style="padding:14px;">
+                <div class="soft-card-title" style="margin-bottom:8px;">DOCKING HATCH</div>
+                <div style="display:flex; justify-content:center; gap:14px; font-size:10px; font-size:1.1rem;">
+                    <span style="background:#e0f2fe; padding:6px 12px; border-radius:10px;">🔒</span>
+                    <span style="background:#f3e8ff; padding:6px 12px; border-radius:10px;">🔓</span>
+                </div>
             </div>
-            <div style="font-size:0.84rem; color:#cbd5e1;">
-                • <strong>BMI:</strong> {derived_bio['bmi']} ({derived_bio['bmi_status']})<br>
-                • <strong>Hydration Target:</strong> {derived_bio['hydration_target_l']} L/day<br>
-                • <strong>Protein Target:</strong> {derived_bio['protein_target_g']} g/day
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
-if nav_page in ("🎛️ Command Overview", "💬 Mental Health & Voice AI"):
-    st.markdown("""
-    <div class="console-panel">
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">💬 CosmoCare Mental Health & Voice AI Companion</div>
-                <div class="panel-subtitle">Auto-Correcting Voice Input • Permission-Based Silent Media Playback • Live DB Sync</div>
+    with right_main:
+        st.markdown('<div class="section-heading">MY DEVICES &amp; LIFE SUPPORT</div>', unsafe_allow_html=True)
+        d_col1, d_col2, d_col3 = st.columns([1.2, 1.2, 0.65])
+        with d_col1:
+            st.markdown(f"""
+            <div class="device-card">
+                <div class="device-title">CO₂ SCRUBBER</div>
+                <div style="font-size:1.7rem; margin:6px 0;">🌬️</div>
+                <div style="font-size:0.72rem; color:#64748b;">{env['co2_ppm']} ppm</div>
+                <div class="toggle-pill"><span>ON</span><span style="color:#64748b;">OFF</span></div>
             </div>
-            <span class="ai-pill-badge">ONLINE • LLAMA 3.3 70B</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+            <div class="device-card">
+                <div class="device-title">WATER RECYCLER</div>
+                <div style="font-size:1.7rem; margin:6px 0;">💧</div>
+                <div style="font-size:0.72rem; color:#64748b;">Target: {derived_bio['hydration_target_l']} L</div>
+                <div class="toggle-pill"><span>ON</span><span style="color:#64748b;">OFF</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with d_col2:
+            st.markdown(f"""
+            <div class="device-card">
+                <div class="device-title">BIOMETRIC MONITOR</div>
+                <div style="font-size:1.7rem; margin:6px 0;">🖥️</div>
+                <div style="font-size:0.72rem; color:#64748b;">HRV: {v.hrv} ms</div>
+                <div class="toggle-pill"><span>ON</span><span style="color:#64748b;">OFF</span></div>
+            </div>
+            <div class="device-card">
+                <div class="device-title">CIRCADIAN LAMP</div>
+                <div style="font-size:1.7rem; margin:6px 0;">🛋️</div>
+                <div style="font-size:0.72rem; color:#64748b;">ARED: {triage_info['ared_mod']}%</div>
+                <div class="toggle-pill"><span>ON</span><span style="color:#64748b;">OFF</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with d_col3:
+            if st.button("➕\nSLEEP", use_container_width=True):
+                routine.start_sleep_session(st.session_state.astronaut_id)
+                st.toast("Sleep session started!", icon="🛌")
+            if st.button("➕\nWAKE", use_container_width=True):
+                res = routine.confirm_wake_up_and_calculate_sleep(st.session_state.astronaut_id)
+                st.session_state.chat_history.append({"role": "AI", "content": res["message"]})
+                generate_and_play_tts(res["message"])
+                st.rerun()
+            if st.button("➕\nRATION", use_container_width=True):
+                supply.consume_ration(st.session_state.astronaut_id, 1, 1.0)
+                st.toast("Logged 1 ration pack!", icon="🍽️")
+
+        st.markdown('<div class="section-heading" style="margin-top:8px;">MY ROOMS &amp; HABITAT MODULES</div>', unsafe_allow_html=True)
+        r_col1, r_col2 = st.columns([1.55, 1])
+        with r_col1:
+            st.markdown("""
+            <div class="room-grid">
+                <div class="room-pill-active">LIVING QUARTERS</div>
+                <div class="room-pill-soft">COMMAND DECK</div>
+                <div class="room-pill-soft">SLEEP POD BAY</div>
+                <div class="room-pill-active">MEDICAL BAY</div>
+                <div class="room-pill-soft">GALLEY RATIONS</div>
+                <div class="room-pill-active">ARED GYM LAB</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with r_col2:
+            st.markdown("""
+            <div class="soft-card" style="padding:14px;">
+                <div class="soft-card-title" style="margin-bottom:6px;">LIGHT INTENSITY</div>
+                <div style="font-size:1.35rem; font-weight:800; color:#7c3aed; margin:8px 0;">76%</div>
+                <div style="font-size:0.72rem; color:#64748b;">— ────●── +</div>
+                <div class="toggle-pill"><span>ON</span><span style="color:#64748b;">OFF</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown('<div class="section-heading">💬 COSMOCARE VOICE AI COMPANION &amp; SILENT MEDIA PLAYER</div>', unsafe_allow_html=True)
 
     if st.session_state.active_media:
         raw_path = st.session_state.active_media.get("file_path", "")
@@ -834,7 +865,7 @@ if nav_page in ("🎛️ Command Overview", "💬 Mental Health & Voice AI"):
                 generate_and_play_tts(followup)
                 st.rerun()
         else:
-            st.warning(f"Media file not found at `{raw_path}`. Upload `.mp3` files in the Media Vault.")
+            st.warning(f"Media file not found at `{raw_path}`. Upload `.mp3` files in the Members & Profile tab.")
 
     for msg in st.session_state.chat_history:
         with st.chat_message("user" if msg["role"] == "User" else "assistant"):
@@ -842,7 +873,7 @@ if nav_page in ("🎛️ Command Overview", "💬 Mental Health & Voice AI"):
 
     user_text = ""
     if hasattr(st, "audio_input"):
-        web_audio = st.audio_input("🎙️ Tap to Speak (Auto-Corrects & Auto-Sends when you click Stop):")
+        web_audio = st.audio_input("🎙️ Tap to Speak (Auto-Corrects & Auto-Sends on Stop):")
         if web_audio is not None:
             audio_bytes = web_audio.getvalue()
             if audio_bytes != st.session_state.last_audio_bytes:
@@ -864,7 +895,7 @@ if nav_page in ("🎛️ Command Overview", "💬 Mental Health & Voice AI"):
 
     if user_text:
         st.session_state.chat_history.append({"role": "User", "content": user_text})
-        with st.spinner("CosmoCare AI is analyzing..."):
+        with st.spinner("CosmoCare AI is responding..."):
             response = agent.chat(
                 st.session_state.astronaut_id,
                 user_text,
@@ -886,58 +917,9 @@ if nav_page in ("🎛️ Command Overview", "💬 Mental Health & Voice AI"):
                 st.session_state.active_media = response.get("media_file")
         st.rerun()
 
-elif nav_page == "🍽️ Diet, Hydration & Supply":
-    inv_eval = supply.evaluate_inventory_and_trigger(distance_km)
-    lead = inv_eval["lead_data"]
-    l1, l2, l3 = st.columns(3)
-    l1.metric("One-Way Light Delay", f"{lead['one_way_light_delay_hours']} hrs")
-    l2.metric("Resupply Transit Time", f"{lead['transit_time_days']} days")
-    l3.metric("Total Resupply Lead Threshold", f"{lead['total_lead_time_days']} days")
-
-    conn = db.get_connection()
-    inv_rows = [dict(r) for r in conn.execute("SELECT * FROM inventory").fetchall()]
-    conn.close()
-
-    col_sel, col_qty, col_btn = st.columns([2, 1, 1])
-    with col_sel:
-        chosen_item = st.selectbox("Select Ration / Supply Item", inv_rows, format_func=lambda x: f"{x['item_name']} ({x['quantity']} {x['unit']})")
-    with col_qty:
-        consume_qty = st.number_input("Quantity Consumed", min_value=0.1, max_value=50.0, value=1.0, step=0.5)
-    with col_btn:
-        st.write("")
-        st.write("")
-        if st.button("🍽️ Deduct & Log Stock", use_container_width=True):
-            res = supply.consume_ration(st.session_state.astronaut_id, chosen_item["item_id"], consume_qty)
-            st.success(f"Logged {consume_qty} {res['unit']} of {res['item_name']}. Remaining: {res['remaining_quantity']} {res['unit']}")
-            st.rerun()
-
-    st.dataframe(inv_eval["items"], use_container_width=True)
-
-elif nav_page == "🌙 Sleep Timer & Alarm":
-    st.subheader(f"🌙 Circadian Sleep Pod & Wake Alarm Tracker — {active_profile.get('name')}")
-    c_s1, c_s2 = st.columns(2)
-    with c_s1:
-        if st.button("🛌 Start Sleep Session Now", use_container_width=True):
-            routine.start_sleep_session(st.session_state.astronaut_id)
-            st.success("Sleep timer started in SQLite DB!")
-            st.rerun()
-    with c_s2:
-        if st.button("☀️ Confirm Wake-Up & Calculate Sleep", use_container_width=True):
-            res = routine.confirm_wake_up_and_calculate_sleep(st.session_state.astronaut_id)
-            st.session_state.chat_history.append({"role": "AI", "content": res["message"]})
-            generate_and_play_tts(res["message"])
-            st.success(res["message"])
-            st.rerun()
-
-    conn = db.get_connection()
-    sleep_logs = [dict(r) for r in conn.execute("SELECT session_id, sleep_start, wake_confirm, duration_hours, status FROM sleep_sessions WHERE astronaut_id = ? ORDER BY session_id DESC LIMIT 10", (st.session_state.astronaut_id,)).fetchall()]
-    conn.close()
-    st.dataframe(sleep_logs, use_container_width=True)
-
-elif nav_page == "🩺 Medical Triage & Waveforms":
-    st.subheader(f"🩺 Clinical Status ({active_profile.get('name')}): {triage_info['status_level']} — {triage_info['diagnosis']}")
+elif nav_page == "📊 STATISTICS & TRIAGE":
+    st.subheader(f"📊 Clinical Status ({active_profile.get('name')}): {triage_info['status_level']} — {triage_info['diagnosis']}")
     st.info(f"**Phase:** {triage_info['phase_name']} | **Explanation:** {triage_info['explanation']}")
-    st.write(f"**Verification Protocol:** {triage_info['verification']}")
     for s in triage_info["steps"]:
         st.markdown(f"- {s}")
 
@@ -950,7 +932,18 @@ elif nav_page == "🩺 Medical Triage & Waveforms":
         st.caption("📉 Simulated Optical PPG Pulse Waveform")
         st.line_chart([w["ppg_amp"] for w in wave_samples])
 
-elif nav_page == "🔐 Crew Profile & Media Vault":
+elif nav_page == "🛡️ SECURITY & ALERTS":
+    st.subheader("🛡️ Spacecraft Security & Danger Alert Logs")
+    conn = db.get_connection()
+    alert_rows = [dict(r) for r in conn.execute("SELECT * FROM crew_danger_alerts ORDER BY alert_id DESC LIMIT 15").fetchall()]
+    tx_rows = [dict(r) for r in conn.execute("SELECT * FROM reorder_transmissions ORDER BY transmission_id DESC LIMIT 10").fetchall()]
+    conn.close()
+    st.caption("Recent Crew & Habitat Danger Alerts (`crew_danger_alerts`):")
+    st.dataframe(alert_rows, use_container_width=True)
+    st.caption("Automated Earth Mission Control Transmissions (`reorder_transmissions`):")
+    st.dataframe(tx_rows, use_container_width=True)
+
+elif nav_page == "👥 MEMBERS & PROFILE":
     col_b1, col_b2 = st.columns(2)
     with col_b1:
         st.subheader(f"🧬 Update Biometrics ({active_profile.get('name')})")
@@ -1000,3 +993,27 @@ elif nav_page == "🔐 Crew Profile & Media Vault":
                 if c_m2.button("🗑️", key=f"del_m_{mf.name}"):
                     db.delete_user_media_file(st.session_state.astronaut_id, str(mf))
                     st.rerun()
+
+elif nav_page == "💡 LIGHTS, SLEEP & RATIONS":
+    inv_eval = supply.evaluate_inventory_and_trigger(distance_km)
+    conn = db.get_connection()
+    inv_rows = [dict(r) for r in conn.execute("SELECT * FROM inventory").fetchall()]
+    sleep_logs = [dict(r) for r in conn.execute("SELECT session_id, sleep_start, wake_confirm, duration_hours, status FROM sleep_sessions WHERE astronaut_id = ? ORDER BY session_id DESC LIMIT 8", (st.session_state.astronaut_id,)).fetchall()]
+    conn.close()
+
+    col_sel, col_qty, col_btn = st.columns([2, 1, 1])
+    with col_sel:
+        chosen_item = st.selectbox("Select Ration / Supply Item", inv_rows, format_func=lambda x: f"{x['item_name']} ({x['quantity']} {x['unit']})")
+    with col_qty:
+        consume_qty = st.number_input("Quantity Consumed", min_value=0.1, max_value=50.0, value=1.0, step=0.5)
+    with col_btn:
+        st.write("")
+        st.write("")
+        if st.button("🍽️ Deduct & Log Stock", use_container_width=True):
+            res = supply.consume_ration(st.session_state.astronaut_id, chosen_item["item_id"], consume_qty)
+            st.success(f"Logged {consume_qty} {res['unit']} of {res['item_name']}. Remaining: {res['remaining_quantity']} {res['unit']}")
+            st.rerun()
+
+    st.dataframe(inv_eval["items"], use_container_width=True)
+    st.caption("Recent Sleep Sessions (`sleep_sessions` table):")
+    st.dataframe(sleep_logs, use_container_width=True)
