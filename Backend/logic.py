@@ -12,6 +12,7 @@ from typing import Dict, List, Tuple, Union, Any, Optional
 
 DB_NAME = "cosmo_care.db"
 DATA_DIR = Path(__file__).parent / "data"
+MEDIA_DIR = Path(__file__).parent / "assets" / "media"
 SPEED_OF_LIGHT_KM_S = 299792.458
 EARTH_PREP_DAYS = 3.0
 SAFETY_BUFFER_PERCENT = 0.15
@@ -64,7 +65,6 @@ class DatabaseManager:
         return conn
 
     def ensure_all_tables(self):
-        """Online Cloud Server එකකදී Database එක ස්වයංක්‍රීයව සෑදීමට සියලුම Tables මෙහි ඇතුළත් කර ඇත"""
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.executescript("""
@@ -220,7 +220,6 @@ class DatabaseManager:
         conn.close()
 
     def seed_initial_data_if_empty(self):
-        """Cloud එකේ මුලින්ම Run වෙද්දී මූලික ගගනගාමීන් සහ ආහාර දත්ත ඇතුළත් කිරීම"""
         conn = self.get_connection()
         count = conn.execute("SELECT COUNT(*) as c FROM astronauts").fetchone()["c"]
         if count == 0:
@@ -1067,16 +1066,15 @@ class DangerAlertManager:
             "title": title,
             "message": message,
             "earth_notified": notify_earth,
-            "play_siren": severity == "CRITICAL",
-            "voice_announcement": f"Attention! {title}. {message} Earth Mission Control and onboard crew have been notified. Starting 15-minute welfare check-ins."
+            "play_siren": True,
+            "voice_announcement": f"{severity} Alert! {title}. {message} Earth Mission Control and onboard crew have been notified. Starting 15-minute welfare check-ins."
         }
 
 
 def build_master_system_prompt(astronaut_name, current_time, active_alerts=None):
-    media_dir = "assets/media"
     available_media = []
-    if os.path.exists(media_dir):
-        available_media = [f for f in os.listdir(media_dir) if f.endswith(('.mp3', '.mp4', '.wav'))]
+    if MEDIA_DIR.exists():
+        available_media = [f for f in os.listdir(MEDIA_DIR) if f.lower().endswith(('.mp3', '.mp4', '.wav'))]
 
     media_list_str = ", ".join(available_media) if available_media else "relax_song_1.mp3"
 
@@ -1179,21 +1177,20 @@ class AstroCompanionAgent:
         return schedules.get(simulated_time_str)
 
     def get_random_local_media(self, astronaut_id: str) -> Dict[str, str]:
-        media_dir = "assets/media"
-        if os.path.exists(media_dir):
-            files = [f for f in os.listdir(media_dir) if f.endswith(('.mp3', '.mp4', '.wav'))]
+        if MEDIA_DIR.exists():
+            files = [f for f in os.listdir(MEDIA_DIR) if f.lower().endswith(('.mp3', '.mp4', '.wav'))]
             if files:
                 chosen = random.choice(files)
-                m_type = "video" if chosen.endswith(".mp4") else "audio"
+                m_type = "video" if chosen.lower().endswith(".mp4") else "audio"
                 return {
                     "media_type": m_type,
                     "title": chosen,
-                    "file_path": os.path.join(media_dir, chosen)
+                    "file_path": str(MEDIA_DIR / chosen)
                 }
         return {
             "media_type": "audio",
             "title": "relax_song_1.mp3",
-            "file_path": "assets/media/relax_song_1.mp3"
+            "file_path": str(MEDIA_DIR / "relax_song_1.mp3")
         }
 
     def chat(self, astronaut_id: str, user_message: str, is_voice_input: bool = False,
@@ -1222,12 +1219,16 @@ class AstroCompanionAgent:
             if r["sender"] == "AI":
                 last_ai_msg = r["message_text"].lower()
                 break
-        ai_just_offered_media = any(k in last_ai_msg for k in ["play", "music", "audio", "song", "listen", "track", ".mp3", ".mp4"])
+        ai_just_offered_media = (
+            astronaut_id in self.pending_media
+            or any(k in last_ai_msg for k in ["play", "music", "audio", "song", "listen", "track", ".mp3", ".mp4", ".wav"])
+        )
 
-        explicit_play_cmd = any(w in lower_msg for w in ["yes play", "play song", "play music", "play a song", "play audio", "sure play", "ow play"])
-        affirmative_to_offer = ai_just_offered_media and any(w in lower_msg.split() for w in ["yes", "yeah", "sure", "ok", "okay", "please", "play", "ow"])
+        explicit_play_cmd = any(w in lower_msg for w in ["yes play", "play song", "play music", "play a song", "play audio", "sure play", "ow play", "play it"])
+        clean_words = [w.strip(".,!?") for w in lower_msg.split()]
+        affirmative_to_offer = ai_just_offered_media and any(w in clean_words for w in ["yes", "yeah", "yep", "sure", "ok", "okay", "please", "play", "ow", "hari"])
         user_confirmed_media = explicit_play_cmd or affirmative_to_offer
-        user_is_sad = current_mood <= 4 or any(w in lower_msg for w in ["sad", "depressed", "lonely", "stressed", "tired", "down", "duka"])
+        user_is_sad = current_mood <= 4 or any(w in lower_msg for w in ["sad", "depressed", "lonely", "stressed", "tired", "down", "duka", "unhappy"])
 
         if user_confirmed_media:
             self.pending_media.pop(astronaut_id, None)
@@ -1263,22 +1264,24 @@ class AstroCompanionAgent:
                 reply_text = "I am right here with you. All spacecraft systems and your vitals look stable. How are you feeling?"
 
         trigger_play_media = "[PLAY_MEDIA" in reply_text
-        trigger_ask_media = "[ASK_MEDIA]" in reply_text
-
-        if trigger_ask_media:
-
-            for f in (os.listdir("assets/media") if os.path.exists("assets/media") else []):
-                if f.lower() in reply_text.lower():
-                    fav_media = {
-                        "media_type": "video" if f.endswith(".mp4") else "audio",
-                        "title": f,
-                        "file_path": os.path.join("assets/media", f)
-                    }
-                    break
-            self.pending_media[astronaut_id] = fav_media
+        trigger_ask_media = "[ASK_MEDIA]" in reply_text or any(k in reply_text.lower() for k in [".mp3", ".mp4", ".wav", "would you like me to play", "shall i play"])
         trigger_danger = "[DANGER_ALERT]" in reply_text or "[SET_CHECKIN_15M]" in reply_text
 
+        if trigger_ask_media or trigger_play_media:
+            if MEDIA_DIR.exists():
+                for f in os.listdir(MEDIA_DIR):
+                    if f.lower().endswith(('.mp3', '.mp4', '.wav')) and f.lower() in reply_text.lower():
+                        fav_media = {
+                            "media_type": "video" if f.lower().endswith(".mp4") else "audio",
+                            "title": f,
+                            "file_path": str(MEDIA_DIR / f)
+                        }
+                        break
+            if trigger_ask_media and not trigger_play_media:
+                self.pending_media[astronaut_id] = fav_media
+
         if trigger_play_media:
+            self.pending_media.pop(astronaut_id, None)
             clean_spoken_reply = ""
         else:
             clean_spoken_reply = (
@@ -1313,7 +1316,6 @@ class AstroCompanionAgent:
         }
 
     def _query_llm(self, system_prompt: str, history: List[sqlite3.Row], latest_user_msg: str) -> Optional[str]:
-        """Checking whether online or not """
         messages = [{"role": "system", "content": system_prompt}]
         for h in history:
             role = "user" if h["sender"] == "User" else "assistant"
@@ -1322,8 +1324,13 @@ class AstroCompanionAgent:
             messages.append({"role": "user", "content": latest_user_msg})
 
         api_key = self.groq_api_key or os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            try:
+                import streamlit as st
+                api_key = st.secrets.get("GROQ_API_KEY")
+            except Exception:
+                pass
 
-        # 1. Online Mode (Groq Cloud API)
         if api_key:
             payload = json.dumps({
                 "model": self.groq_model,
@@ -1348,7 +1355,6 @@ class AstroCompanionAgent:
             except Exception:
                 pass
 
-        # 2. Offline Mode (Local LM Studio Fallback)
         payload = json.dumps({
             "model": "local-model",
             "messages": messages,
