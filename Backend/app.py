@@ -341,6 +341,7 @@ with tab_bio:
                 st.success("Biometrics updated in SQLite DB!")
                 st.rerun()
 
+
     with col_b2:
         st.subheader("🗄️ Live Sleep Sessions & Notifications DB")
         conn = db.get_connection()
@@ -351,3 +352,59 @@ with tab_bio:
         st.dataframe(sleep_logs, use_container_width=True)
         st.caption("Recent Ration Consumption (`consumption_logs` table):")
         st.dataframe(cons_logs, use_container_width=True)
+
+    st.markdown("---")
+    col_sec, col_med_mgr = st.columns(2)
+
+    with col_sec:
+        st.subheader("🔑 Update Crew Password & Schedule")
+        with st.form("pw_update_form"):
+            new_pw = st.text_input("New Password for " + st.session_state.astronaut_id, type="password")
+            if st.form_submit_button("🔒 Update Password in DB"):
+                if db.update_astronaut_password(st.session_state.astronaut_id, new_pw):
+                    st.success("Password updated in SQLite Database!")
+                else:
+                    st.error("Password must be at least 4 characters.")
+
+        with st.form("schedule_update_form"):
+            st.caption("Add or Update Proactive Clock Schedule (`system_schedule` table):")
+            s_time = st.text_input("Time Slot (24h format, e.g., 15:00)", value="15:00")
+            s_title = st.text_input("Event Title", value="Afternoon Hydration & Stretch")
+            s_prompt = st.text_area("AI Voice Prompt", value="Time for your afternoon water pouch and lumbar stretch.")
+            s_alarm = st.checkbox("Play Wake/Alert Alarm")
+            if st.form_submit_button("⏰ Save Schedule to DB"):
+                db.upsert_schedule(s_time, s_title, s_prompt, s_alarm)
+                st.success(f"Schedule for {s_time} saved to DB!")
+                st.rerun()
+
+    with col_med_mgr:
+        st.subheader("🎵 Personal Media & Voice Recordings Vault")
+        uploaded_media = st.file_uploader("Upload Custom Song (.mp3/.wav) or Video (.mp4) for AI Playback", type=["mp3", "wav", "mp4"])
+        if uploaded_media is not None:
+            cat = "video" if uploaded_media.name.lower().endswith(".mp4") else "music"
+            if st.button("⬆️ Save Media to Astronaut Folder & DB"):
+                saved_p = db.save_user_media_file(st.session_state.astronaut_id, cat, uploaded_media.name, uploaded_media.getvalue())
+                st.success(f"Saved to `{saved_p}` and linked in DB! AI can now play this track.")
+                st.rerun()
+
+        user_files = db.get_user_media_list(st.session_state.astronaut_id)
+        st.caption("🎙️ **Saved User Voice Recordings (`voice` folder):**")
+        if user_files.get("voice"):
+            for vf in user_files["voice"][:5]:
+                c_v1, c_v2 = st.columns([4, 1])
+                with c_v1:
+                    st.audio(str(vf))
+                with c_v2:
+                    if st.button("🗑️", key=f"del_{vf.name}"):
+                        db.delete_user_media_file(st.session_state.astronaut_id, str(vf))
+                        st.rerun()
+        else:
+            st.info("No voice recordings saved yet. Speak into the Browser Mic to auto-save logs!")
+
+        st.caption("🎶 **Uploaded Personal Music & Videos (`media_preferences` DB):**")
+        for mf in (user_files.get("music", []) + user_files.get("video", [])):
+            c_m1, c_m2 = st.columns([4, 1])
+            c_m1.write(f"• `{mf.name}`")
+            if c_m2.button("🗑️", key=f"del_m_{mf.name}"):
+                db.delete_user_media_file(st.session_state.astronaut_id, str(mf))
+                st.rerun()
