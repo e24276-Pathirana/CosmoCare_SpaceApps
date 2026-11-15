@@ -1,0 +1,24 @@
+[
+  {
+    "id": "ex_nasa_001",
+    "category": "exercise",
+    "name": "ARED Squats",
+    "equipment": "ARED",
+    "zones": ["deep_space", "mars_surface", "cislunar", "leo"],
+    "target": ["legs", "core"],
+    "frequency": "Daily",
+    "duration_min": 30,
+    "contraindications": ["Knee", "Lower back"]
+  },
+  {
+    "id": "ex_nasa_002",
+    "category": "exercise",
+    "name": "T2 Treadmill Interval Run",
+    "equipment": "T2 Treadmill",
+    "zones": ["deep_space", "mars_surface", "leo"],
+    "target": ["cardiovascular"],
+    "frequency": "Daily",
+    "duration_min": 45,
+    "contraindications": ["Ankle"]
+  }
+]

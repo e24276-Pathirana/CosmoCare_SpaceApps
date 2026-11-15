@@ -1,0 +1,27 @@
+{
+  "exams": [
+    {
+      "id": "cardio_exam_01",
+      "name": "Cardiovascular Health Check",
+      "where": "Medical Bay",
+      "review": "Flight Surgeon Review",
+      "fields": [
+        {
+          "name": "resting_hr",
+          "label": "Resting Heart Rate",
+          "type": "number",
+          "unit": "bpm",
+          "normal_min": 50,
+          "normal_max": 85
+        },
+        {
+          "name": "ecg_rhythm",
+          "label": "ECG Rhythm Status",
+          "type": "choice",
+          "choices": ["Normal Sinus", "Ectopic Beats", "Arrhythmia"],
+          "abnormal": ["Ectopic Beats", "Arrhythmia"]
+        }
+      ]
+    }
+  ]
+}
