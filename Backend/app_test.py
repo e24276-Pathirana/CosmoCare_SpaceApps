@@ -59,8 +59,7 @@ def generate_and_play_tts(text):
                 st.session_state.tts_audio_b64 = base64.b64encode(data).decode()
             os.remove(temp_file)
     except Exception:
-
-                pass
+        pass
 
 
 # --- Voice Recognition Helpers ---
@@ -68,7 +67,7 @@ def recognize_from_local_mic():
     """Fast & Auto-Send"""
     recognizer = sr.Recognizer()
     recognizer.dynamic_energy_threshold = True
-    recognizer.pause_threshold = 0.8 
+    recognizer.pause_threshold = 0.8
     try:
         with sr.Microphone() as source:
             st.toast("🎤 Listening... Speak now!", icon="🎙️")
@@ -85,7 +84,7 @@ def recognize_from_local_mic():
 
 
 def recognize_from_browser_audio(audio_bytes):
-    """Taking the sond through the browser's mic"""
+    """Taking the sound through the browser's mic"""
     recognizer = sr.Recognizer()
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(audio_bytes)
@@ -183,12 +182,6 @@ for msg in st.session_state.chat_history:
 # --- Voice & Text Input Section (AUTO-SEND ENABLED) ---
 user_text = ""
 
-col_local_mic, col_web_mic = st.columns([1, 2])
-
-
-user_text = ""
-
-
 if hasattr(st, "audio_input"):
     web_audio = st.audio_input("🌐 Tap to Speak (Auto-Sends when you click Stop):")
     if web_audio is not None:
@@ -200,33 +193,15 @@ if hasattr(st, "audio_input"):
                 st.error(result)
             else:
                 st.session_state.last_voice_text = result
-                user_text = result  
-
-with col_web_mic:
-
-        if hasattr(st, "audio_input"):
-        web_audio = st.audio_input("🌐 Browser Mic (For Online Cloud / Judges - Auto-Sends on Stop):")
-        if web_audio is not None:
-            audio_bytes = web_audio.getvalue()
-            if audio_bytes != st.session_state.last_audio_bytes:
-                st.session_state.last_audio_bytes = audio_bytes
-                result = recognize_from_browser_audio(audio_bytes)
-                if result.startswith("ERROR:"):
-                    st.error(result)
-                else:
-                    st.session_state.last_voice_text = result
-                    user_text = result  
-                    
+                user_text = result
 
 if st.session_state.last_voice_text:
     st.caption(f"✨ **Auto-Corrected Voice Transcript Sent:** `{st.session_state.last_voice_text}`")
-
 
 typed_input = st.chat_input("Or type your message here and press Enter...")
 if typed_input:
     st.session_state.last_voice_text = ""
     user_text = typed_input
-
 
 if user_text:
     st.session_state.chat_history.append({"role": "User", "content": user_text})
