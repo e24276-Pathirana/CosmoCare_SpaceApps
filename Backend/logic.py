@@ -539,7 +539,53 @@ class DatabaseManager:
         conn.execute("DELETE FROM system_schedule WHERE schedule_id = ?", (schedule_id,))
         conn.commit()
         conn.close()
+    
+    def update_astronaut_password(self, astronaut_id: str, new_password: str) -> bool:
+        if not new_password or len(new_password.strip()) < 4:
+            return False
+        conn = self.get_connection()
+        conn.execute(
+            "UPDATE astronauts SET password_hash = ? WHERE astronaut_id = ?",
+            (hash_password(new_password), astronaut_id)
+        )
+        conn.commit()
+        conn.close()
+        self.add_notification(astronaut_id, "INFO", "Security Credentials Updated", "Your crew password hash was updated in the onboard database.")
+        return True
 
+    def save_user_media_file(self, astronaut_id: str, category: str, filename: str, file_bytes: bytes, mood_tag: str = "sad") -> str:
+        folders = self.ensure_user_media_folders(astronaut_id)
+        target_dir = folders.get(category, folders["music"])
+        safe_name = os.path.basename(filename)
+        dest_path = target_dir / safe_name
+        with open(dest_path, "wb") as f:
+            f.write(file_bytes)
+
+        if category in ("music", "video"):
+            conn = self.get_connection()
+            conn.execute("""
+                INSERT INTO media_preferences (astronaut_id, media_type, title, file_path, mood_category)
+                VALUES (?, ?, ?, ?, ?)
+            """, (astronaut_id, category, safe_name, str(dest_path), mood_tag))
+            conn.commit()
+            conn.close()
+        return str(dest_path)
+
+    def get_user_media_list(self, astronaut_id: str) -> Dict[str, List[Path]]:
+        folders = self.ensure_user_media_folders(astronaut_id)
+        result = {}
+        for k, folder in folders.items():
+            result[k] = sorted(list(folder.iterdir()), key=lambda x: x.stat().st_mtime, reverse=True) if folder.exists() else []
+        return result
+
+    def delete_user_media_file(self, astronaut_id: str, file_path_str: str):
+        p = Path(file_path_str)
+        if p.exists():
+            p.unlink()
+        conn = self.get_connection()
+        conn.execute("DELETE FROM media_preferences WHERE astronaut_id = ? AND file_path = ?", (astronaut_id, file_path_str))
+        conn.commit()
+        conn.close()
 
 class SensorSimulator:
     def __init__(self, db: DatabaseManager):
