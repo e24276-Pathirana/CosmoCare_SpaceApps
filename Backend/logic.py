@@ -262,12 +262,25 @@ class DatabaseManager:
         """)
 
         cols = [r["name"] for r in cursor.execute("PRAGMA table_info(astronauts)").fetchall()]
-        if "password_hash" not in cols:
-            cursor.execute("ALTER TABLE astronauts ADD COLUMN password_hash TEXT;")
-        if "role" not in cols:
-            cursor.execute("ALTER TABLE astronauts ADD COLUMN role TEXT DEFAULT 'Mission Specialist';")
-        if "blood_type" not in cols:
-            cursor.execute("ALTER TABLE astronauts ADD COLUMN blood_type TEXT DEFAULT 'O+';")
+        for col_name, col_def in [
+            ("role", "TEXT DEFAULT 'Mission Specialist'"),
+            ("age", "INTEGER"),
+            ("sex", "TEXT"),
+            ("height_cm", "REAL"),
+            ("weight_kg", "REAL"),
+            ("blood_type", "TEXT DEFAULT 'O+'"),
+            ("fitness_level", "TEXT"),
+            ("mission_duration_days", "INTEGER"),
+            ("password_hash", "TEXT")
+        ]:
+            if col_name not in cols:
+                cursor.execute(f"ALTER TABLE astronauts ADD COLUMN {col_name} {col_def};")
+
+        vital_cols = [r["name"] for r in cursor.execute("PRAGMA table_info(live_vitals_telemetry)").fetchall()]
+        if "co2_mmhg" not in vital_cols:
+            cursor.execute("ALTER TABLE live_vitals_telemetry ADD COLUMN co2_mmhg REAL DEFAULT 2.6;")
+        if "ectopic_beats" not in vital_cols:
+            cursor.execute("ALTER TABLE live_vitals_telemetry ADD COLUMN ectopic_beats INTEGER DEFAULT 0;")
 
         inv_cols = [r["name"] for r in cursor.execute("PRAGMA table_info(inventory)").fetchall()]
         for col_def in [
