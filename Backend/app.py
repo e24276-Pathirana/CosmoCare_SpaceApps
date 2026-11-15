@@ -10,6 +10,212 @@ from pathlib import Path
 
 st.set_page_config(page_title="SpaceStation AI — Command Console", page_icon="🛰️", layout="wide")
 
+
+@st.cache_resource
+def init_system():
+    db = logic.DatabaseManager()
+    sim = logic.SensorSimulator(db)
+    supply = logic.DeepSpaceSupplyEngine(db)
+    rad = logic.RadiationMonitorLogic(db)
+    alerts_mgr = logic.DangerAlertManager(db, supply, rad)
+    routine = logic.RoutineAndSleepTracker(db)
+    agent = logic.AstroCompanionAgent(db)
+    return db, sim, supply, rad, alerts_mgr, routine, agent
+
+
+db, sim, supply, rad, alerts_mgr, routine, agent = init_system()
+
+if "authenticated_user" not in st.session_state:
+    st.session_state.authenticated_user = None
+if "astronaut_id" not in st.session_state:
+    st.session_state.astronaut_id = None
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+if "active_media" not in st.session_state:
+    st.session_state.active_media = None
+if "tts_audio_bytes" not in st.session_state:
+    st.session_state.tts_audio_bytes = None
+if "last_voice_text" not in st.session_state:
+    st.session_state.last_voice_text = ""
+if "last_audio_bytes" not in st.session_state:
+    st.session_state.last_audio_bytes = None
+if "announce_alerts_now" not in st.session_state:
+    st.session_state.announce_alerts_now = False
+
+
+if st.session_state.authenticated_user is None:
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+
+    .stApp {
+        background: linear-gradient(180deg, #2b4c9b 0%, #4f74c8 55%, #3b5fa8 100%);
+    }
+
+    section[data-testid="stSidebar"] {
+        display: none !important;
+    }
+
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+    }
+
+    .login-hero-banner {
+        width: 100%;
+        border-radius: 16px 16px 0 0;
+        overflow: hidden;
+        box-shadow: 0 12px 30px rgba(10, 22, 58, 0.35);
+        margin-bottom: -16px;
+        position: relative;
+        z-index: 2;
+    }
+
+    div[data-testid="stForm"] {
+        background: #ffffff !important;
+        border-radius: 0 0 16px 16px !important;
+        padding: 34px 38px 36px 38px !important;
+        border: none !important;
+        box-shadow: 0 20px 45px rgba(10, 22, 58, 0.45) !important;
+    }
+
+    .login-heading {
+        text-align: center;
+        color: #162a64;
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        margin-bottom: 18px;
+    }
+
+    div[data-testid="stTextInput"] label {
+        color: #1e3a8a !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+    }
+
+    div[data-testid="stTextInput"] input {
+        background: linear-gradient(90deg, #254b9e 0%, #7da2e8 55%, #c5d8f8 100%) !important;
+        color: #ffffff !important;
+        border-radius: 25px !important;
+        border: none !important;
+        padding: 12px 20px !important;
+        font-weight: 600 !important;
+    }
+
+    div[data-testid="stTextInput"] input::placeholder {
+        color: rgba(255, 255, 255, 0.88) !important;
+    }
+
+    div[data-testid="stFormSubmitButton"] {
+        display: flex;
+        justify-content: center;
+        margin-top: 14px;
+    }
+
+    div[data-testid="stFormSubmitButton"] button {
+        background: #1b3d8e !important;
+        color: #ffffff !important;
+        border-radius: 8px !important;
+        padding: 8px 42px !important;
+        font-weight: 700 !important;
+        border: none !important;
+        box-shadow: 0 4px 14px rgba(27, 61, 142, 0.4) !important;
+    }
+
+    div[data-testid="stFormSubmitButton"] button:hover {
+        background: #122b69 !important;
+    }
+
+    .demo-creds-box {
+        background: rgba(15, 29, 68, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 10px;
+        padding: 10px 16px;
+        color: #e2e8f0;
+        font-size: 0.78rem;
+        margin-top: 16px;
+        text-align: center;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    _, center_col, _ = st.columns([1.15, 1.3, 1.15])
+    with center_col:
+        st.markdown("""
+        <div class="login-hero-banner">
+            <svg viewBox="0 0 500 280" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                <defs>
+                    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#17377a"/>
+                        <stop offset="65%" stop-color="#2855a8"/>
+                        <stop offset="100%" stop-color="#152c66"/>
+                    </linearGradient>
+                    <linearGradient id="lakeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#163273"/>
+                        <stop offset="100%" stop-color="#0f2356"/>
+                    </linearGradient>
+                </defs>
+                <rect width="500" height="280" fill="url(#skyGrad)"/>
+                <circle cx="95" cy="48" r="1.5" fill="#ffffff" opacity="0.8"/>
+                <circle cx="155" cy="30" r="2" fill="#ffffff" opacity="0.9"/>
+                <circle cx="240" cy="42" r="1.2" fill="#ffffff" opacity="0.7"/>
+                <circle cx="385" cy="65" r="1.8" fill="#ffffff" opacity="0.85"/>
+                <circle cx="430" cy="40" r="1.4" fill="#ffffff" opacity="0.7"/>
+                <line x1="425" y1="18" x2="310" y2="75" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>
+                <circle cx="285" cy="145" r="46" fill="#a8c5f0" opacity="0.85"/>
+                <polygon points="0,195 95,120 215,195" fill="#1e4088"/>
+                <polygon points="160,195 295,115 430,195" fill="#183576"/>
+                <polygon points="310,195 435,105 500,195" fill="#122a63"/>
+                <polygon points="0,195 140,145 270,195" fill="#10255a"/>
+                <rect x="0" y="195" width="500" height="85" fill="url(#lakeGrad)"/>
+                <ellipse cx="285" cy="215" rx="55" ry="4" fill="#6b96d6" opacity="0.35"/>
+                <ellipse cx="285" cy="228" rx="38" ry="3" fill="#6b96d6" opacity="0.25"/>
+                <ellipse cx="285" cy="240" rx="22" ry="2.5" fill="#6b96d6" opacity="0.2"/>
+                <text x="250" y="96" fill="#ffffff" font-size="22" font-weight="700" font-family="Inter, sans-serif" text-anchor="middle">Welcome to CosmoCare</text>
+                <text x="250" y="118" fill="#cbd5e1" font-size="10.5" font-family="Inter, sans-serif" text-anchor="middle">Autonomous Space Station Medical &amp; AI Companion</text>
+            </svg>
+        </div>
+        """, unsafe_allow_html=True)
+
+        with st.form("astronaut_login_form"):
+            st.markdown('<div class="login-heading">USER LOGIN</div>', unsafe_allow_html=True)
+            input_user = st.text_input("👤 User ID / Astronaut ID", placeholder="Enter ID (e.g., A004, A005, A006)")
+            input_pass = st.text_input("🔒 Password", type="password", placeholder="Enter Password")
+            c_rem, c_forgot = st.columns(2)
+            with c_rem:
+                st.checkbox("Remember me", value=True)
+            with c_forgot:
+                st.markdown('<div style="text-align:right; font-size:0.8rem; color:#3b5fa8; padding-top:6px;">Forgot password?</div>', unsafe_allow_html=True)
+
+            login_Clicked = st.form_submit_button("Log in")
+            if login_Clicked:
+                auth_user = db.authenticate_user(input_user, input_pass)
+                if auth_user:
+                    st.session_state.authenticated_user = auth_user
+                    st.session_state.astronaut_id = auth_user["astronaut_id"]
+                    st.session_state.current_vitals = sim.get_latest_vitals(auth_user["astronaut_id"])
+                    st.session_state.current_env = sim.generate_environment_reading()
+                    st.session_state.chat_history = []
+                    st.rerun()
+                else:
+                    st.error("Invalid Astronaut ID or Password. Please check credentials below.")
+
+        st.markdown("""
+        <div class="demo-creds-box">
+            <strong>Crew Login Credentials:</strong><br>
+            • <code>A004</code> (Dr. Sarah Mitchell) — Pass: <code>Sarah@2026</code><br>
+            • <code>A005</code> (Cmdr. James Holden) — Pass: <code>Holden@2026</code><br>
+            • <code>A006</code> (Eng. Elena Rostova) — Pass: <code>Elena@2026</code>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.stop()
+
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -264,17 +470,6 @@ div[data-testid="stRadio"] label:hover {
     font-weight: 700;
 }
 
-.exercise-row {
-    background: #161f33;
-    border: 1px solid #23314d;
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
 .crew-footer {
     background: #131c2e;
     border: 1px solid #1e293b;
@@ -284,6 +479,7 @@ div[data-testid="stRadio"] label:hover {
     align-items: center;
     gap: 10px;
     margin-top: 14px;
+    margin-bottom: 10px;
 }
 
 .crew-avatar {
@@ -299,38 +495,6 @@ div[data-testid="stRadio"] label:hover {
 }
 </style>
 """, unsafe_allow_html=True)
-
-
-@st.cache_resource
-def init_system():
-    db = logic.DatabaseManager()
-    sim = logic.SensorSimulator(db)
-    supply = logic.DeepSpaceSupplyEngine(db)
-    rad = logic.RadiationMonitorLogic(db)
-    alerts_mgr = logic.DangerAlertManager(db, supply, rad)
-    routine = logic.RoutineAndSleepTracker(db)
-    agent = logic.AstroCompanionAgent(db)
-    return db, sim, supply, rad, alerts_mgr, routine, agent
-
-
-db, sim, supply, rad, alerts_mgr, routine, agent = init_system()
-
-if "authenticated_user" not in st.session_state:
-    st.session_state.authenticated_user = db.get_astronaut_by_id("A004")
-if "astronaut_id" not in st.session_state:
-    st.session_state.astronaut_id = "A004"
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "active_media" not in st.session_state:
-    st.session_state.active_media = None
-if "tts_audio_bytes" not in st.session_state:
-    st.session_state.tts_audio_bytes = None
-if "last_voice_text" not in st.session_state:
-    st.session_state.last_voice_text = ""
-if "last_audio_bytes" not in st.session_state:
-    st.session_state.last_audio_bytes = None
-if "announce_alerts_now" not in st.session_state:
-    st.session_state.announce_alerts_now = False
 
 
 def generate_and_play_tts(text):
@@ -457,10 +621,15 @@ with st.sidebar:
         <div class="crew-avatar">{initials}</div>
         <div>
             <div style="font-weight:600; font-size:0.85rem; color:#f1f5f9;">{active_profile.get('name', 'Dr. Sarah Mitchell')}</div>
-            <div style="font-size:0.72rem; color:#64748b;">{st.session_state.astronaut_id} • {active_profile.get('sex', 'Female')}</div>
+            <div style="font-size:0.72rem; color:#64748b;">{st.session_state.astronaut_id} • {active_profile.get('role', '')}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    if st.button("🚪 Log Out", use_container_width=True):
+        st.session_state.authenticated_user = None
+        st.session_state.astronaut_id = None
+        st.rerun()
 
 v = st.session_state.current_vitals
 env = st.session_state.current_env
@@ -483,6 +652,7 @@ st.markdown(f"""
         <div class="header-sub">
             Logged in: <strong style="color:#e2e8f0;">{active_profile.get('name', 'Dr. Sarah Mitchell')}</strong> • 
             ID: <strong style="color:#38bdf8;">{st.session_state.astronaut_id}</strong> • 
+            Role: <strong style="color:#cbd5e1;">{active_profile.get('role', 'Mission Specialist')}</strong> • 
             Fitness: <strong style="color:#10b981;">{active_profile.get('fitness_level', 'High')}</strong> • 
             Ship Time: <strong style="color:#f8fafc;">{simulated_time} UTC</strong>
         </div>
@@ -524,9 +694,9 @@ with mc3:
 with mc4:
     st.markdown(f"""
     <div class="metric-card">
-        <div class="metric-top"><span>TDRS LINK ACTIVE</span><div class="metric-icon">📡</div></div>
-        <div class="metric-val">27,561 km/h</div>
-        <div class="metric-sub">Orbital Velocity (Telemetry Synced)</div>
+        <div class="metric-top"><span>BIOMETRIC PROFILE</span><div class="metric-icon">🧬</div></div>
+        <div class="metric-val">{active_profile.get('weight_kg', 65.0)} kg</div>
+        <div class="metric-sub">Height: {active_profile.get('height_cm', 170.5)} cm • Blood: {active_profile.get('blood_type', 'O+')}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -621,7 +791,7 @@ if nav_page in ("🎛️ Command Overview", "📅 Daily Schedule & Exercise"):
         st.markdown(f"""
         <div class="console-panel">
             <div class="panel-header">
-                <div class="panel-title">🥗 Diet & Nutritional Flight Plan</div>
+                <div class="panel-title">🥗 Personalized Diet & Nutritional Flight Plan ({active_profile.get('name')})</div>
                 <span style="color:#fbbf24; font-family:'JetBrains Mono',monospace; font-size:0.85rem;">~{derived_bio['daily_kcal_target']} kcal Target</span>
             </div>
             <div style="font-size:0.84rem; color:#cbd5e1;">
@@ -744,7 +914,7 @@ elif nav_page == "🍽️ Diet, Hydration & Supply":
     st.dataframe(inv_eval["items"], use_container_width=True)
 
 elif nav_page == "🌙 Sleep Timer & Alarm":
-    st.subheader("🌙 Circadian Sleep Pod & Wake Alarm Tracker")
+    st.subheader(f"🌙 Circadian Sleep Pod & Wake Alarm Tracker — {active_profile.get('name')}")
     c_s1, c_s2 = st.columns(2)
     with c_s1:
         if st.button("🛌 Start Sleep Session Now", use_container_width=True):
@@ -765,7 +935,7 @@ elif nav_page == "🌙 Sleep Timer & Alarm":
     st.dataframe(sleep_logs, use_container_width=True)
 
 elif nav_page == "🩺 Medical Triage & Waveforms":
-    st.subheader(f"🩺 Clinical Status: {triage_info['status_level']} — {triage_info['diagnosis']}")
+    st.subheader(f"🩺 Clinical Status ({active_profile.get('name')}): {triage_info['status_level']} — {triage_info['diagnosis']}")
     st.info(f"**Phase:** {triage_info['phase_name']} | **Explanation:** {triage_info['explanation']}")
     st.write(f"**Verification Protocol:** {triage_info['verification']}")
     for s in triage_info["steps"]:
@@ -783,20 +953,7 @@ elif nav_page == "🩺 Medical Triage & Waveforms":
 elif nav_page == "🔐 Crew Profile & Media Vault":
     col_b1, col_b2 = st.columns(2)
     with col_b1:
-        st.subheader("🔐 Switch Active Crew Member")
-        login_id = st.selectbox("Select Astronaut ID", ["A004", "A005", "A006"])
-        login_pw = st.text_input("Password (Default: Sarah@2026 / Holden@2026 / Elena@2026)", value="Sarah@2026", type="password")
-        if st.button("Switch Crew Account", use_container_width=True):
-            auth = db.authenticate_user(login_id, login_pw)
-            if auth:
-                st.session_state.authenticated_user = auth
-                st.session_state.astronaut_id = auth["astronaut_id"]
-                st.success(f"Logged in: {auth['name']}")
-                st.rerun()
-            else:
-                st.error("Invalid credentials.")
-
-        st.subheader("🧬 Update Biometrics")
+        st.subheader(f"🧬 Update Biometrics ({active_profile.get('name')})")
         with st.form("biometrics_form"):
             new_h = st.number_input("Height (cm)", value=float(active_profile.get("height_cm", 170.5)))
             new_w = st.number_input("Weight (kg)", value=float(active_profile.get("weight_kg", 65.0)))
