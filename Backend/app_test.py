@@ -45,8 +45,7 @@ def generate_and_play_tts(text):
     if not text or not text.strip():
         return
     voice = "en-US-AriaNeural"
-
-        temp_file = os.path.join(tempfile.gettempdir(), f"tts_{uuid.uuid4().hex}.mp3")
+    temp_file = os.path.join(tempfile.gettempdir(), f"tts_{uuid.uuid4().hex}.mp3")
 
     async def _generate():
         communicate = edge_tts.Communicate(text, voice)
