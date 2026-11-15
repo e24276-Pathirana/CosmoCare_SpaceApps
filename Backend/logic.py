@@ -11,8 +11,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from statistics import median
 from typing import Dict, List, Tuple, Union, Any, Optional
+import tempfile
 
-DB_NAME = str(Path(__file__).parent / "cosmo_care.db")
+_LOCAL_DB = Path(__file__).parent / "cosmo_care.db"
+DB_NAME = str(_LOCAL_DB) if os.access(Path(__file__).parent, os.W_OK) else os.path.join(tempfile.gettempdir(), "cosmo_care.db")
 DATA_DIR = Path(__file__).parent / "data"
 MEDIA_DIR = Path(__file__).parent / "assets" / "media"
 USER_MEDIA_ROOT = Path(__file__).parent / "assets" / "user_media"
