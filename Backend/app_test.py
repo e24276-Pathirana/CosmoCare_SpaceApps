@@ -45,8 +45,8 @@ def generate_and_play_tts(text):
     if not text or not text.strip():
         return
     voice = "en-US-AriaNeural"
-    # Thread ගැටුම් වැළැක්වීමට Unique file නමක් භාවිත කිරීම
-    temp_file = os.path.join(tempfile.gettempdir(), f"tts_{uuid.uuid4().hex}.mp3")
+
+        temp_file = os.path.join(tempfile.gettempdir(), f"tts_{uuid.uuid4().hex}.mp3")
 
     async def _generate():
         communicate = edge_tts.Communicate(text, voice)
@@ -60,16 +60,16 @@ def generate_and_play_tts(text):
                 st.session_state.tts_audio_b64 = base64.b64encode(data).decode()
             os.remove(temp_file)
     except Exception:
-        # Internet නැතිනම් හෝ TTS අසමත් වුවහොත් Crash නොවී මඟහැරීම
-        pass
+
+                pass
 
 
 # --- Voice Recognition Helpers ---
 def recognize_from_local_mic():
-    """ලැප්ටොප් එකේ මයික්‍රෆෝනයෙන් කෙළින්ම හඬ ලබා ගැනීම (Fast & Auto-Send)"""
+    """Fast & Auto-Send"""
     recognizer = sr.Recognizer()
     recognizer.dynamic_energy_threshold = True
-    recognizer.pause_threshold = 0.8  # කතා කර නැවැත්වූ සැණින් හඳුනා ගැනීමට
+    recognizer.pause_threshold = 0.8 
     try:
         with sr.Microphone() as source:
             st.toast("🎤 Listening... Speak now!", icon="🎙️")
@@ -86,7 +86,7 @@ def recognize_from_local_mic():
 
 
 def recognize_from_browser_audio(audio_bytes):
-    """Online Judge Board සඳහා Web Browser මයික්‍රෆෝනයෙන් හඬ ලබා ගැනීම"""
+    """Taking the sond through the browser's mic"""
     recognizer = sr.Recognizer()
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(audio_bytes)
@@ -186,19 +186,26 @@ user_text = ""
 
 col_local_mic, col_web_mic = st.columns([1, 2])
 
-with col_local_mic:
-    st.write("**Laptop Mic (Instant Auto-Send):**")
-    if st.button("🎙️ Tap & Speak Now", use_container_width=True):
-        result = recognize_from_local_mic()
-        if result.startswith("ERROR:"):
-            st.error(result)
-        else:
-            st.session_state.last_voice_text = result
-            user_text = result  # <-- කෙළින්ම Auto-Send වේ!
+
+user_text = ""
+
+
+if hasattr(st, "audio_input"):
+    web_audio = st.audio_input("🌐 Tap to Speak (Auto-Sends when you click Stop):")
+    if web_audio is not None:
+        audio_bytes = web_audio.getvalue()
+        if audio_bytes != st.session_state.last_audio_bytes:
+            st.session_state.last_audio_bytes = audio_bytes
+            result = recognize_from_browser_audio(audio_bytes)
+            if result.startswith("ERROR:"):
+                st.error(result)
+            else:
+                st.session_state.last_voice_text = result
+                user_text = result  
 
 with col_web_mic:
-    # Online Cloud එකේදී Judges ලාට භාවිතා කළ හැකි Browser Mic එක
-    if hasattr(st, "audio_input"):
+
+        if hasattr(st, "audio_input"):
         web_audio = st.audio_input("🌐 Browser Mic (For Online Cloud / Judges - Auto-Sends on Stop):")
         if web_audio is not None:
             audio_bytes = web_audio.getvalue()
@@ -209,19 +216,19 @@ with col_web_mic:
                     st.error(result)
                 else:
                     st.session_state.last_voice_text = result
-                    user_text = result  # <-- රෙකෝඩ් කර නැවැත්වූ සැණින් Auto-Send වේ!
+                    user_text = result  
+                    
 
-# Auto-corrected voice text එක තිරයේ පෙන්වීම
 if st.session_state.last_voice_text:
     st.caption(f"✨ **Auto-Corrected Voice Transcript Sent:** `{st.session_state.last_voice_text}`")
 
-# Keyboard එකෙන් Type කර Enter එබූ සැණින් Auto-Send වන Chat Box එක
+
 typed_input = st.chat_input("Or type your message here and press Enter...")
 if typed_input:
     st.session_state.last_voice_text = ""
     user_text = typed_input
 
-# --- Process & Send to AI Immediately ---
+
 if user_text:
     st.session_state.chat_history.append({"role": "User", "content": user_text})
     with st.spinner("AI is responding..."):
