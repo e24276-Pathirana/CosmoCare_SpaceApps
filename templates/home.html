@@ -1,0 +1,851 @@
+<!DOCTYPE html><html class="h-full w-full overflow-hidden" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Cosmo Care - Autonomous Space Medicine &amp; Habitat Command System</title>
+<!-- Tailwind CSS v3 with Forms & Container-Queries Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Custom Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Courier New', 'monospace']
+          },
+          colors: {
+            cyan: {
+              350: '#38efff',
+              450: '#00d5ee'
+            }
+          }
+        }
+      }
+    }
+  </script>
+<!-- Google Fonts Preconnect -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Core Page Styles & Strict Non-Scrolling Constraints -->
+<style data-purpose="viewport-lock">
+    html, body {
+      height: 100vh !important;
+      max-height: 100vh !important;
+      width: 100vw !important;
+      overflow: hidden !important;
+      position: fixed;
+      inset: 0;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+      background-color: #030712;
+    }
+  </style>
+<!-- Aerospace Dock Menu Transitions and Micro-animations -->
+<style data-purpose="interactive-dock">
+    .dock-tab {
+      transition: all 340ms cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dock-tab:hover {
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+    }
+    .grid-line-glow {
+      background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(6,182,212,0.12) 50%, rgba(255,255,255,0.04) 100%);
+    }
+    .hud-box-glow {
+      box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.02);
+    }
+
+    /* Dora Voice Waveform Animations */
+    @keyframes wave-bounce {
+      0%, 100% { height: 3px; opacity: 0.35; }
+      50% { height: 18px; opacity: 1; filter: drop-shadow(0 0 4px #00f0ff); }
+    }
+    .wave-bar {
+      transition: height 0.15s ease, opacity 0.2s ease;
+      height: 3px;
+      opacity: 0.4;
+    }
+    .wave-playing .wave-bar {
+      animation: wave-bounce 0.9s infinite ease-in-out;
+    }
+    .wave-playing .wave-bar:nth-child(2n) { animation-duration: 0.65s; animation-delay: 0.1s; }
+    .wave-playing .wave-bar:nth-child(3n) { animation-duration: 0.82s; animation-delay: 0.22s; }
+    .wave-playing .wave-bar:nth-child(4n) { animation-duration: 0.55s; animation-delay: 0.15s; }
+    .wave-playing .wave-bar:nth-child(5n) { animation-duration: 0.75s; animation-delay: 0.3s; }
+    .wave-playing .wave-bar:nth-child(7n) { animation-duration: 0.95s; animation-delay: 0.05s; }
+
+    /* Highlight Pulse for Cam Panel when targeted from Alert */
+    @keyframes cam-panel-highlight {
+      0%, 100% { box-shadow: 0 0 35px rgba(6, 182, 212, 0.7), 0 0 15px rgba(245, 158, 11, 0.5); border-color: rgba(6, 212, 250, 0.9); }
+      50% { box-shadow: 0 0 50px rgba(0, 240, 255, 0.9), 0 0 25px rgba(245, 158, 11, 0.8); border-color: #38efff; }
+    }
+    .cam-highlight-active {
+      animation: cam-panel-highlight 1.6s ease-in-out 3;
+    }
+  </style>
+</head>
+<body class="text-white font-sans selection:bg-cyan-500 selection:text-black">
+<!-- BEGIN: MasterViewportContainer -->
+<div class="relative w-full h-full overflow-hidden flex flex-col justify-between page-enter" data-purpose="viewport-root">
+<!-- BEGIN: BackgroundHeroLayer -->
+<div class="absolute inset-0 z-0 pointer-events-none" data-purpose="background-scene">
+<!-- High-resolution astronaut Mars exploration background image -->
+<div class="absolute inset-0 bg-cover bg-center scale-[1.01]" style="background-image: url(&quot;https://lh3.googleusercontent.com/aida/ALJJyrDvnZpHu2252vHDaW3FemoZ7nhmmyUlMJwKOPjpNhvzOLMDrQNVBo8ijYoEZIsdxFw4t12kjyGdNGS5L_TZzpkN2WlteB0FZ_WmWcvj17rShpgD5eCveak7He4s9zAY7WTUvMgMdnqBM6_w6Ks9mIiyHqMSLdu-P3oF5NSu_U1826TI0KNyZfB5de7F26Jtma3W3vbiVM6Wi4kTaH0IM-_qkf6mpIB_XM4Yu2hTbswi&quot;); background-position: center center; filter: contrast(1.18) brightness(1.08) saturate(1.15);">
+</div><div class="absolute pointer-events-none overflow-hidden" style="left: 42%; top: -14%; width: 54vw; max-width: 780px; min-width: 480px; aspect-ratio: 1 / 1; border-radius: 50%; z-index: 1;"><div class="absolute inset-0 rounded-full earth-sphere-body"></div><div class="absolute inset-0 rounded-full earth-cloud-layer"></div><div class="absolute inset-0 rounded-full earth-rim-glow pointer-events-none"></div></div><div class="absolute inset-0 pointer-events-none scale-[1.01]" style="background-image: url(&quot;https://lh3.googleusercontent.com/aida/ALJJyrDvnZpHu2252vHDaW3FemoZ7nhmmyUlMJwKOPjpNhvzOLMDrQNVBo8ijYoEZIsdxFw4t12kjyGdNGS5L_TZzpkN2WlteB0FZ_WmWcvj17rShpgD5eCveak7He4s9zAY7WTUvMgMdnqBM6_w6Ks9mIiyHqMSLdu-P3oF5NSu_U1826TI0KNyZfB5de7F26Jtma3W3vbiVM6Wi4kTaH0IM-_qkf6mpIB_XM4Yu2hTbswi&quot;); background-position: center center; background-size: cover; z-index: 2; mask-image: linear-gradient(to top, black 0%, black 50%, rgba(0, 0, 0, 0.92) 53%, transparent 58%);"></div>
+<!-- Deep Radial Vignette Overlay for High Typography Contrast -->
+<div class="absolute inset-0" style="background: radial-gradient(circle at 55% 42%, rgba(3, 7, 18, 0.08) 0%, rgba(3, 7, 18, 0.45) 55%, rgba(3, 7, 18, 0.85) 85%, rgba(3, 7, 18, 0.97) 100%);">
+</div>
+<!-- Top and Bottom Vignette Shading Gradients -->
+<div class="absolute inset-x-0 top-0 h-44 bg-gradient-to-b from-[#030712]/95 via-[#030712]/60 to-transparent"></div>
+<div class="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#030712]/98 via-[#030712]/70 to-transparent"></div>
+</div>
+<!-- END: BackgroundHeroLayer -->
+<!-- BEGIN: ArchitecturalGridOverlay -->
+<div class="absolute inset-0 z-[1] pointer-events-none grid grid-cols-4 md:grid-cols-6 h-full w-full" data-purpose="architectural-grid">
+<div class="border-r border-white/[0.06] h-full hidden md:block"></div>
+<div class="border-r border-white/[0.06] h-full"></div>
+<div class="border-r border-white/[0.06] h-full"></div>
+<div class="border-r border-white/[0.06] h-full"></div>
+<div class="border-r border-white/[0.06] h-full hidden md:block"></div>
+<div class="h-full"></div>
+<!-- Coordinate Crosshairs for Aerospace HUD feel -->
+<div class="absolute top-24 left-[16.666%] -translate-x-1/2 -translate-y-1/2 text-[9px] font-mono text-cyan-400/40 select-none hidden md:block">+ CC-01.ALPHA</div>
+<div class="absolute top-24 right-[16.666%] translate-x-1/2 -translate-y-1/2 text-[9px] font-mono text-cyan-400/40 select-none hidden md:block">+ CC-04.DELTA</div>
+<div class="absolute bottom-16 left-[50%] -translate-x-1/2 text-[9px] font-mono text-white/20 select-none hidden md:block">+ NADIR TELEMETRY LOCK — SYS.V73.4</div>
+</div>
+<!-- END: ArchitecturalGridOverlay -->
+<!-- BEGIN: TopNavigationBar -->
+<header class="relative z-20 w-full px-6 md:px-12 pt-6 pb-4 flex items-center justify-between gap-4" data-purpose="top-navigation-bar">
+<!-- Logo Branding (Top-Left) -->
+<div class="flex items-center gap-3" data-purpose="brand-identity">
+<div class="relative w-12 h-12 rounded-full border border-cyan-400/60 flex items-center justify-center bg-cyan-950/50 backdrop-blur-md shadow-[0_0_15px_rgba(6,182,212,0.35)] shrink-0"><svg class="w-8 h-8 text-cyan-300 drop-shadow-[0_0_8px_#00f0ff]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 3a1.5 1.5 0 0 1 1.5-1.5h5A1.5 1.5 0 0 1 16 3v5h5a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-5v5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 8 21v-5H3a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 3 8h5V3z"></path></svg></div>
+<div>
+<a class="text-xl md:text-2xl font-bold tracking-tight inline-flex items-center" href="{{DATA:SCREEN:SCREEN_10}}">
+<span class="text-white">COSMO</span>
+<span class="text-cyan-400 ml-1.5 font-light">CARE</span>
+</a>
+<p class="text-[9px] font-mono tracking-[0.28em] text-white/50 uppercase leading-none mt-0.5">Healthcare Beyond Earth</p>
+</div>
+</div>
+<!-- Expanding Dock Navigation Pill (Top-Center) -->
+<nav class="hidden lg:flex items-center backdrop-blur-xl bg-slate-950/60 border border-white/10 rounded-full p-1.5 shadow-[0_8px_32px_0_rgba(0,0,0,0.6)]" data-current-tab="0" data-purpose="expanding-dock"><a class="dock-tab flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/15 border border-cyan-400/40 text-cyan-300 text-xs font-mono tracking-wider shadow-[0_0_12px_rgba(6,182,212,0.25)]" data-tab-index="0" href="{{DATA:SCREEN:SCREEN_10}}"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span><span class="font-semibold">01 HOME</span></a><a class="dock-tab group flex items-center gap-2 px-3 py-2 rounded-full border border-transparent hover:border-cyan-400/40 hover:bg-cyan-500/10 text-white/70 hover:text-cyan-200 text-xs font-mono tracking-wider max-w-[84px] hover:max-w-[270px] cursor-pointer" data-tab-index="1" href="{{DATA:SCREEN:SCREEN_7}}"><span class="text-cyan-400/80 group-hover:text-cyan-300 font-bold shrink-0">02</span><span class="truncate">DEVICES &amp; HABITAT</span></a><a class="dock-tab group flex items-center gap-2 px-3 py-2 rounded-full border border-transparent hover:border-cyan-400/40 hover:bg-cyan-500/10 text-white/70 hover:text-cyan-200 text-xs font-mono tracking-wider max-w-[80px] hover:max-w-[220px] cursor-pointer" data-tab-index="2" href="{{DATA:SCREEN:SCREEN_10}}"><span class="text-cyan-400/80 group-hover:text-cyan-300 font-bold shrink-0">03</span><span class="truncate">STATISTICS &amp; TRIAGE</span></a><a class="dock-tab group flex items-center gap-2 px-3 py-2 rounded-full border border-transparent hover:border-cyan-400/40 hover:bg-cyan-500/10 text-white/70 hover:text-cyan-200 text-xs font-mono tracking-wider max-w-[76px] hover:max-w-[210px] cursor-pointer" data-tab-index="3" href="{{DATA:SCREEN:SCREEN_5}}"><span class="text-cyan-400/80 group-hover:text-cyan-300 font-bold shrink-0">04</span><span class="truncate">SECURITY &amp; ALERTS</span></a><a class="dock-tab group flex items-center gap-2 px-3 py-2 rounded-full border border-transparent hover:border-cyan-400/40 hover:bg-cyan-500/10 text-white/70 hover:text-cyan-200 text-xs font-mono tracking-wider max-w-[84px] hover:max-w-[250px] cursor-pointer" data-tab-index="4" href="{{DATA:SCREEN:SCREEN_3}}"><span class="text-cyan-400/80 group-hover:text-cyan-300 font-bold shrink-0">05</span><span class="truncate">SLEEP &amp; RATIONS</span></a></nav>
+<!-- Action Button & Status (Top-Right) -->
+<div class="flex items-center gap-3" data-purpose="nav-actions"><!-- Notification Bell Action -->
+<div class="relative" id="notification-bell-wrapper">
+<!-- Notification Bell Button -->
+<button aria-expanded="false" aria-label="Notifications" class="relative w-9 h-9 md:w-10 md:h-10 rounded-full border border-cyan-400/30 bg-slate-950/60 backdrop-blur-md flex items-center justify-center text-cyan-300 hover:text-white hover:border-cyan-400 hover:bg-cyan-500/20 transition-all shadow-[0_0_15px_rgba(6,182,212,0.15)] group cursor-pointer bell-shake" id="notification-bell-btn" onclick="const drawer = document.getElementById('notification-drawer'); const isClosed = drawer.classList.contains('hidden'); const profileMenu = document.getElementById('crew-profile-menu'); if (profileMenu &amp;&amp; !profileMenu.classList.contains('hidden')) { profileMenu.classList.add('hidden'); document.getElementById('crew-profile-btn')?.setAttribute('aria-expanded', 'false'); } if (isClosed) { drawer.classList.remove('hidden'); this.setAttribute('aria-expanded', 'true'); } else { drawer.classList.add('hidden'); this.setAttribute('aria-expanded', 'false'); }" type="button">
+<svg class="w-4 h-4 md:w-4.5 md:h-4.5 stroke-current transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+<!-- Red Notification Dot / Alert Indicator Badge -->
+<span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] border border-slate-900/60 animate-pulse" id="notif-badge"></span>
+</button>
+<!-- Interactive Notification Drawer / Panel -->
+<div class="hidden absolute right-0 top-12 mt-2 w-80 md:w-96 rounded-2xl border border-cyan-500/30 z-50 text-left select-none animate-in fade-in zoom-in-95 duration-150 flex flex-col" id="notification-drawer" style="background: rgba(8, 13, 25, 0.94); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: 0 16px 45px -8px rgba(0,0,0,0.85), 0 0 25px rgba(6, 182, 212, 0.16); max-height: calc(100vh - 90px);"><div class="p-4 pb-3 border-b border-white/10 shrink-0"><div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]"></span><h3 class="text-xs font-mono font-bold tracking-widest text-white uppercase">COMM &amp; EVENT FEED</h3><span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40" id="unread-count-chip">5 ACTIVE</span></div><div class="flex items-center gap-2"><button class="text-[10px] font-mono text-cyan-400 hover:text-cyan-200 transition-colors uppercase tracking-wider p-0.5 cursor-pointer font-semibold" onclick="document.querySelectorAll('.notif-unread-dot').forEach(d =&gt; d.classList.add('opacity-0')); const cnt = document.getElementById('unread-count-chip'); if(cnt){cnt.innerText = '0 ACTIVE'; cnt.className = 'text-[9px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/40 border border-white/10';} const b = document.getElementById('notif-badge'); if(b) b.classList.add('hidden');" type="button">MARK ALL READ</button><button aria-label="Close Drawer" class="text-white/40 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10 cursor-pointer" onclick="document.getElementById('notification-drawer').classList.add('hidden'); document.getElementById('notification-bell-btn').setAttribute('aria-expanded', 'false');" type="button"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div></div></div><div class="p-3 flex flex-col gap-2 overflow-y-auto max-h-[50vh] text-xs font-mono" id="notification-feed"><!-- DEDICATED OPTICAL MOOD MONITOR CAMERA ALERT ITEM -->
+<div class="p-2.5 rounded-xl border border-amber-500/50 bg-amber-950/30 hover:border-amber-400 hover:bg-amber-950/50 transition-all flex flex-col gap-2 group cursor-pointer shadow-[0_0_14px_rgba(245,158,11,0.2)]" id="optical-mood-alert-item" onclick="if(window.inspectOpticalFeed) window.inspectOpticalFeed(event);"><div class="flex items-start gap-2.5"><div class="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-400/60 flex items-center justify-center shrink-0 mt-0.5 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.3)] group-hover:scale-105 transition-transform"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg></div><div class="flex-1 min-w-0"><div class="flex items-center justify-between"><div class="flex items-center gap-1.5"><span class="notif-unread-dot w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]"></span><span class="text-[11px] font-bold text-amber-300 tracking-wide uppercase">OPTICAL BIO-METRIC &amp; MOOD</span></div><span class="text-[9px] text-amber-400/90 font-bold font-mono">09:14 UTC</span></div><p class="text-[10px] text-white/85 leading-relaxed mt-1 font-sans" id="optical-alert-body-text"><span class="text-amber-300 font-semibold">AFFECT SENSING:</span> Mild Fatigue / Micro-stress signatures detected during EVA egress review. Baseline focus: 94%.</p></div></div><div class="flex items-center justify-between pt-1 border-t border-amber-500/20 mt-0.5"><div class="flex items-center gap-1 text-[9px] font-mono text-amber-400/80"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span><span>PRIORITY: AMBER // OPTICAL TELEMETRY</span></div><button class="px-2 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 border border-cyan-400/50 text-[9px] font-mono font-bold tracking-wider hover:text-white transition-all cursor-pointer" onclick="event.stopPropagation(); if(window.inspectOpticalFeed) window.inspectOpticalFeed(event);" type="button">INSPECT OPTICAL FEED →</button></div></div><a class="p-2.5 rounded-xl border border-red-500/40 bg-red-950/30 hover:border-red-400 hover:bg-red-950/50 transition-all flex items-start gap-2.5 group cursor-pointer shadow-[0_0_12px_rgba(239,68,68,0.15)]" href="{{DATA:SCREEN:SCREEN_5}}"><div class="w-7 h-7 rounded-lg bg-red-500/20 border border-red-500/50 flex items-center justify-center shrink-0 mt-0.5 text-red-300 shadow-[0_0_8px_rgba(239,68,68,0.25)] group-hover:scale-105 transition-transform"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></div><div class="flex-1 min-w-0"><div class="flex items-center justify-between"><div class="flex items-center gap-1.5"><span class="notif-unread-dot w-1.5 h-1.5 rounded-full bg-red-400 shadow-[0_0_6px_#ef4444]"></span><span class="text-[11px] font-bold text-red-300 tracking-wide">CRITICAL: SOLAR FLARE WARNING</span></div><span class="text-[9px] text-red-300/80 font-bold uppercase">SECURITY &amp; ALERTS →</span></div><p class="text-[10px] text-white/80 leading-relaxed mt-1 font-sans">Radiation elevation (+0.42 mSv/day) detected. Shielding coils auto-compensating.</p></div></a><a class="p-2.5 rounded-xl border border-cyan-500/30 bg-cyan-950/20 hover:border-cyan-400 hover:bg-cyan-950/40 transition-all flex items-start gap-2.5 group cursor-pointer" href="{{DATA:SCREEN:SCREEN_10}}"><div class="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center shrink-0 mt-0.5 text-cyan-300 group-hover:scale-105 transition-transform"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></polyline></svg></div><div class="flex-1 min-w-0"><div class="flex items-center justify-between"><div class="flex items-center gap-1.5"><span class="notif-unread-dot w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f0ff]"></span><span class="text-[11px] font-bold text-cyan-200 tracking-wide">ADVISORY: HEMODYNAMIC SHIFT</span></div><span class="text-[9px] text-cyan-400 font-bold uppercase">STATISTICS &amp; TRIAGE →</span></div><p class="text-[10px] text-white/70 leading-relaxed mt-1 font-sans">Microgravity fluid redistribution stabilizing. Crew A004 BP 120/77 mmHg, MAP 91.3.</p></div></a><a class="p-2.5 rounded-xl border border-cyan-500/25 bg-slate-950/40 hover:border-cyan-400 hover:bg-cyan-950/30 transition-all flex items-start gap-2.5 group cursor-pointer" href="{{DATA:SCREEN:SCREEN_7}}"><div class="w-7 h-7 rounded-lg bg-cyan-950/50 border border-cyan-400/30 flex items-center justify-center shrink-0 mt-0.5 text-cyan-300 group-hover:scale-105 transition-transform"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12.8 19.6A2 2 0 1 0 14 16H2" stroke-linecap="round" stroke-width="2"></path><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2" stroke-linecap="round" stroke-width="2"></path></svg></div><div class="flex-1 min-w-0"><div class="flex items-center justify-between"><div class="flex items-center gap-1.5"><span class="notif-unread-dot w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f0ff]"></span><span class="text-[11px] font-semibold text-white tracking-wide">ADVISORY: CO₂ SCRUBBER CYCLE</span></div><span class="text-[9px] text-cyan-400/90 font-bold uppercase">MY DEVICES →</span></div><p class="text-[10px] text-white/60 leading-relaxed mt-1 font-sans">Module 02 secondary cycle engaged. Partial pressure nominal at 987.4 ppm.</p></div></a><a class="p-2.5 rounded-xl border border-amber-500/30 bg-amber-950/20 hover:border-amber-400 hover:bg-amber-950/40 transition-all flex items-start gap-2.5 group cursor-pointer" href="{{DATA:SCREEN:SCREEN_3}}"><div class="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 mt-0.5 text-amber-300 group-hover:scale-105 transition-transform"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></div><div class="flex-1 min-w-0"><div class="flex items-center justify-between"><div class="flex items-center gap-1.5"><span class="notif-unread-dot w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]"></span><span class="text-[11px] font-bold text-amber-300 tracking-wide">WARNING: ELECTROLYTE MIX LOW</span></div><span class="text-[9px] text-amber-400 font-bold uppercase">SLEEP &amp; RATIONS →</span></div><p class="text-[10px] text-white/70 leading-relaxed mt-1 font-sans">Biomass stock: 112 sachets remaining (74 days stock). Below 90d transit buffer.</p></div></a></div><div class="p-2.5 px-4 border-t border-white/10 bg-slate-950/60 rounded-b-2xl flex items-center justify-between shrink-0"><button class="text-[10px] font-mono tracking-wider text-red-300/80 hover:text-red-200 uppercase transition-colors cursor-pointer" onclick="document.querySelectorAll('.notif-unread-dot').forEach(d =&gt; d.remove()); const c = document.getElementById('unread-count-chip'); if(c) { c.innerText = '0 ACTIVE'; c.className = 'text-[9px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/40 border border-white/10'; } const b = document.getElementById('notif-badge'); if(b) b.remove();" type="button">CLEAR ALL</button><a class="text-[10px] font-mono tracking-wider text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-1 uppercase transition-colors group cursor-pointer" href="{{DATA:SCREEN:SCREEN_5}}"><span>SECURITY CONSOLE →</span></a></div></div>
+</div>
+<!-- Astronaut Crew Profile Avatar Button -->
+<div class="relative" id="crew-profile-dropdown-wrapper">
+<!-- Astronaut Crew Profile Avatar Button -->
+<button aria-expanded="false" aria-label="Crew Profile" class="relative w-9 h-9 md:w-10 md:h-10 rounded-full border border-cyan-400/50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center text-cyan-300 hover:border-cyan-300 hover:shadow-[0_0_15px_rgba(6,182,212,0.35)] transition-all group cursor-pointer overflow-hidden p-0.5 interactive-btn" id="crew-profile-btn" onclick="const menu = document.getElementById('crew-profile-menu'); const isClosed = menu.classList.contains('hidden'); if(isClosed) { menu.classList.remove('hidden'); this.setAttribute('aria-expanded', 'true'); } else { menu.classList.add('hidden'); this.setAttribute('aria-expanded', 'false'); }" type="button">
+<!-- Stylized Astronaut Helmet / Crew Silhouette Icon -->
+<div class="w-full h-full rounded-full bg-cyan-950/40 border border-white/10 flex items-center justify-center overflow-hidden">
+<svg class="w-5 h-5 text-cyan-200 group-hover:text-white transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M12 2a7 7 0 00-7 7c0 5 4 8 7 8s7-3 7-8a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path>
+<path d="M8.5 8.5c1-1 6-1 7 0 0.8 1.5.5 3.5-1 4-1.5.5-4 .5-5.5 0-1.2-.5-1.3-2.8-.5-4z" fill="rgba(6, 182, 212, 0.25)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"></path>
+<path d="M6 19c1.5 2 3.5 3 6 3s4.5-1 6-3" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path>
+</svg>
+</div>
+<!-- Live Status Ping Badge -->
+</button>
+<!-- Astronaut Crew Profile Modal / Dropdown -->
+<div class="hidden absolute right-0 top-12 mt-2 w-80 md:w-96 rounded-2xl border border-cyan-500/20 z-50 text-left select-none animate-in fade-in zoom-in-95 duration-150" id="crew-profile-menu" style="background: rgba(6, 13, 24, 0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 16px 40px -8px rgba(0,0,0,0.8), 0 0 20px rgba(6, 182, 212, 0.15);"><!-- Header / Identification -->
+<div class="p-4 pb-3 border-b border-white/10 relative">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="relative w-11 h-11 rounded-full border border-cyan-400/40 bg-cyan-950/50 flex items-center justify-center p-1 shadow-[0_0_12px_rgba(6,182,212,0.25)] shrink-0">
+<svg class="w-6 h-6 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M12 2a7 7 0 00-7 7c0 5 4 8 7 8s7-3 7-8a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path>
+<path d="M8.5 8.5c1-1 6-1 7 0 0.8 1.5.5 3.5-1 4-1.5.5-4 .5-5.5 0-1.2-.5-1.3-2.8-.5-4z" fill="rgba(6, 182, 212, 0.3)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"></path>
+<path d="M6 19c1.5 2 3.5 3 6 3s4.5-1 6-3" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path>
+</svg>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-slate-950"></span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h3 class="text-sm font-semibold tracking-wide text-white truncate">DR. ELENA VANCE</h3>
+<span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">ARES-V</span>
+</div>
+<p class="text-[10px] font-mono text-cyan-400/80 uppercase tracking-wider truncate mt-0.5">Rank: Commander // Chief Medical Officer</p>
+</div>
+</div>
+<button aria-label="Close Menu" class="text-white/40 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10" onclick="document.getElementById('crew-profile-menu').classList.add('hidden'); document.getElementById('crew-profile-btn').setAttribute('aria-expanded', 'false');" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Live Status Sub-bar -->
+<div class="mt-3 flex items-center justify-between text-[10px] font-mono pt-2 border-t border-white/[0.06]">
+<span class="flex items-center gap-1.5 text-emerald-400">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+      DUTY STATUS: ACTIVE
+    </span>
+<span class="text-white/40 tracking-wider">ID: CC-HAB-04</span>
+</div>
+</div>
+<!-- Navigation / Action Items -->
+<div class="p-2 flex flex-col gap-1 text-xs font-mono">
+<!-- Item 1: Change Profile Settings -->
+<a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-white/80 hover:text-white hover:bg-white/[0.07] border border-transparent hover:border-cyan-400/20 transition-all group cursor-pointer" href="{{DATA:SCREEN:SCREEN_1}}">
+<svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"></path>
+</svg>
+<span class="flex-1">Change Profile Settings</span>
+<span class="text-[10px] text-white/30 group-hover:text-cyan-300">→</span>
+</a>
+<!-- Item 2: Crew Medical Records -->
+<a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-white/80 hover:text-white hover:bg-white/[0.07] border border-transparent hover:border-cyan-400/20 transition-all group cursor-pointer" href="#medical-records">
+<svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"></path>
+</svg>
+<span class="flex-1">Crew Medical Records</span>
+<span class="text-[10px] text-white/30 group-hover:text-cyan-300">→</span>
+</a>
+<!-- Item 3: Messages -->
+<a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-white/80 hover:text-white hover:bg-white/[0.07] border border-transparent hover:border-cyan-400/20 transition-all group cursor-pointer" href="#messages">
+<svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"></path>
+</svg>
+<span class="flex-1 flex items-center justify-between">
+<span>Messages</span>
+<span class="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">2 NEW</span>
+</span>
+<span class="text-[10px] text-white/30 group-hover:text-cyan-300">→</span>
+</a>
+</div>
+<!-- Bottom Action: Lock Terminal -->
+<div class="p-2.5 border-t border-white/10 bg-slate-950/40 rounded-b-2xl">
+<button class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-red-500/20 bg-red-950/20 hover:bg-red-950/40 text-red-300 hover:text-red-200 text-xs font-mono transition-colors cursor-pointer group" onclick="document.getElementById('crew-profile-menu').classList.add('hidden'); document.getElementById('crew-profile-btn')?.setAttribute('aria-expanded', 'false'); document.body.style.transition = 'all 0.4s ease'; document.body.style.opacity = '0'; setTimeout(() =&gt; { window.location.href = '{{DATA:SCREEN:SCREEN_16}}'; }, 380);" type="button"><svg class="w-3.5 h-3.5 text-red-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path></svg><span class="tracking-wider uppercase font-medium">LOCK TERMINAL</span></button>
+</div></div>
+</div></div>
+</header>
+<!-- END: TopNavigationBar -->
+<!-- BEGIN: QuadrantContentArea -->
+<main class="relative z-10 flex-1 px-6 md:px-12 py-3 flex flex-col justify-between pointer-events-none hud-workspace-container" data-purpose="quadrant-content-container"><div aria-hidden="true" class="hud-scan-sweep" id="hud-scan-line"></div>
+<!-- UPPER SECTION: Left Main Headline & Right Feature Block -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-2 md:pt-4" data-purpose="upper-quadrants">
+<!-- Upper-Left Main Headline Block -->
+<div class="lg:col-span-8 pointer-events-auto" data-purpose="headline-block">
+<!-- Aerospace Mission Badge -->
+<h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-light tracking-tight text-white leading-[1.12] max-w-2xl">
+            Safeguarding human life <br class="hidden sm:inline">
+<span class="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-400">beyond Earth.</span>
+</h1>
+<p class="text-white/75 text-sm md:text-base font-light max-w-lg mt-3.5 leading-relaxed">
+            Autonomous medical telemetry, life-support diagnostics, and AI crew companionship for deep-space missions and orbital habitats.
+          </p>
+</div>
+<!-- Upper-Right Feature Block -->
+<div class="lg:col-span-4 flex justify-start lg:justify-end pointer-events-auto" data-purpose="precision-medicine-block">
+<div class="backdrop-blur-md bg-slate-950/40 border border-white/10 rounded-2xl p-4 md:p-5 max-w-xs hud-box-glow hover:border-cyan-500/30 transition-colors hud-card-enter-1 stagger-card-1">
+<div class="flex items-center justify-between text-cyan-400 mb-2">
+<span class="text-[10px] font-mono tracking-widest text-cyan-400/80">MODULE // 01</span>
+<svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+</svg>
+</div>
+<h2 class="text-base md:text-lg font-medium text-white tracking-wide">
+              Precision Space Medicine
+            </h2>
+<p class="text-[10px] md:text-[11px] font-mono tracking-wider text-white/60 mt-2 leading-relaxed uppercase">
+              CONTINUOUS BIOMETRIC MONITORING, REAL-TIME TRIAGE ALERTS, AND AUTONOMOUS HABITAT CONTROL ENGINEERED FOR LONG-DURATION EXPEDITIONS.
+            </p>
+</div>
+</div>
+</section>
+<!-- LOWER SECTION: Left Resilient Crew Care & Right Mission Readout -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end pb-3 md:pb-6" data-purpose="lower-quadrants">
+<!-- Lower-Left Feature Block -->
+<div class="lg:col-span-6 pointer-events-auto" data-purpose="crew-care-block">
+<div class="backdrop-blur-md bg-slate-950/40 border border-white/10 rounded-2xl p-4 md:p-5 max-w-md hud-box-glow hud-card-enter-2 stagger-card-2">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+<h2 class="text-base md:text-lg font-medium text-white tracking-wide">
+                Resilient Crew Care
+              </h2>
+</div>
+<p class="text-[10px] md:text-[11px] font-mono tracking-wider text-white/60 mt-1.5 leading-relaxed uppercase">
+              FROM CIRCADIAN SLEEP CYCLES AND RATION LOGGING TO EMOTIONAL AI SUPPORT, COSMO CARE KEEPS EVERY ASTRONAUT MISSION-READY.
+            </p>
+<a class="text-xs font-mono text-cyan-400 hover:text-cyan-300 mt-3 inline-flex items-center gap-1.5 group cursor-pointer transition-colors duration-200" href="{{DATA:SCREEN:SCREEN_10}}">
+<span class="tracking-widest uppercase font-medium">SYSTEM OVERVIEW</span>
+<span class="transform group-hover:translate-x-1 transition-transform">→</span>
+</a>
+</div>
+</div>
+<!-- Lower-Right Mission Telemetry Timestamp & Readout -->
+<div class="lg:col-span-6 flex flex-col items-start lg:items-end pointer-events-auto" data-purpose="telemetry-readout-block" style="margin-bottom: 3.5rem;">
+<div class="hud-box-glow text-left select-none hud-card-enter-3 stagger-card-3" style="background: rgba(10, 15, 30, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 1rem; padding: 1.15rem; width: 340px; box-shadow: rgba(0, 0, 0, 0.5) 0px 10px 30px;">
+<!-- Header: Schedule Title & Month Navigator -->
+<div class="flex items-center justify-between pb-2.5 border-b border-white/10">
+<div>
+<div class="text-[9px] font-mono tracking-[0.22em] text-cyan-400/80 uppercase">ORBITAL SCHEDULE // CC-CAL</div>
+<div class="text-sm font-mono font-bold tracking-wider text-white mt-0.5">NOVEMBER 2026</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-6 h-6 rounded flex items-center justify-center border border-white/10 text-white/60 hover:text-cyan-300 hover:border-cyan-400/40 hover:bg-cyan-500/10 transition-colors font-mono text-xs" type="button">
+        &lt;
+      </button>
+<button class="w-6 h-6 rounded flex items-center justify-center border border-white/10 text-white/60 hover:text-cyan-300 hover:border-cyan-400/40 hover:bg-cyan-500/10 transition-colors font-mono text-xs" type="button">
+        &gt;
+      </button>
+</div>
+</div>
+<!-- Calendar Grid: Weekdays Header -->
+<div class="grid grid-cols-7 text-center text-[10px] font-mono font-medium text-white/40 pt-2.5 pb-1 uppercase tracking-wider">
+<div>S</div>
+<div>M</div>
+<div>T</div>
+<div>W</div>
+<div>T</div>
+<div>F</div>
+<div>S</div>
+</div>
+<!-- Calendar Grid: Day Cells -->
+<div class="grid grid-cols-7 gap-y-1 text-center font-mono text-[11px]">
+<!-- Faded previous month days -->
+<div class="py-1 text-white/20">26</div>
+<div class="py-1 text-white/20">27</div>
+<div class="py-1 text-white/20">28</div>
+<div class="py-1 text-white/20">29</div>
+<div class="py-1 text-white/20">30</div>
+<div class="py-1 text-white/20">31</div>
+<!-- Month start -->
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">1</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">2</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">3</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">4</div>
+<!-- Day 5: Bio-Sync Event -->
+<div class="py-1 text-white flex flex-col items-center justify-center cursor-pointer group">
+<span class="leading-none group-hover:text-cyan-300">5</span>
+<span class="w-1 h-1 rounded-full bg-cyan-400 mt-1 shadow-[0_0_6px_#00f0ff]"></span>
+</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">6</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">7</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">8</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">9</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">10</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">11</div>
+<!-- Day 12: Ration Cycle Event -->
+<div class="py-1 text-white flex flex-col items-center justify-center cursor-pointer group">
+<span class="leading-none group-hover:text-amber-300">12</span>
+<span class="w-1 h-1 rounded-full bg-amber-400 mt-1 shadow-[0_0_6px_#fbbf24]"></span>
+</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">13</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">14</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">15</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">16</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">17</div>
+<!-- Day 18: Current Mission Date (Active Glowing Pill) -->
+<div class="flex flex-col items-center justify-center cursor-pointer">
+<div class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px]" style="background: rgba(0, 210, 255, 0.22); color: rgb(0, 240, 255); border: 1px solid rgb(0, 210, 255); box-shadow: rgba(0, 210, 255, 0.5) 0px 0px 12px;">
+        18
+      </div>
+<span class="w-1 h-1 rounded-full bg-cyan-400 mt-0.5 shadow-[0_0_6px_#00f0ff]"></span>
+</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">19</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">20</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">21</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">22</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">23</div>
+<!-- Day 24: Resupply Link Event -->
+<div class="py-1 text-white flex flex-col items-center justify-center cursor-pointer group">
+<span class="leading-none group-hover:text-cyan-300">24</span>
+<span class="w-1 h-1 rounded-full bg-cyan-400 mt-1 shadow-[0_0_6px_#00f0ff]"></span>
+</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">25</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">26</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">27</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">28</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">29</div>
+<div class="py-1 text-white/80 hover:text-cyan-300 cursor-pointer">30</div>
+<div class="py-1 text-white/20">1</div>
+<div class="py-1 text-white/20">2</div>
+<div class="py-1 text-white/20">3</div>
+<div class="py-1 text-white/20">4</div>
+<div class="py-1 text-white/20">5</div>
+<div class="py-1 text-white/20">6</div>
+</div>
+<!-- Footer Info Line -->
+<div class="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[9px] font-mono text-white/50 tracking-wider">
+<span class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+<span class="text-cyan-300">NEXT BIO-TRIAGE:</span> 04H 12M
+    </span>
+<span class="text-emerald-400/90">SYNC LOCK</span>
+</div>
+</div>
+</div>
+</section>
+<style id="hud-motion-styles">
+.hud-workspace-container { position: relative; will-change: transform, opacity; }
+.hud-scan-sweep { position: absolute; top: 0; left: 0; right: 0; height: 1px; pointer-events: none; z-index: 40; opacity: 0; background: linear-gradient(90deg, transparent, rgba(6,182,212,0.9) 50%, transparent); box-shadow: 0 0 10px rgba(6,182,212,0.8); }
+.hud-scan-sweep.active { animation: hudScanSweep 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+@keyframes hudScanSweep { 0% { opacity: 0; transform: scaleX(0.1); } 40% { opacity: 1; transform: scaleX(0.85); } 100% { opacity: 0; transform: scaleX(1); } }
+.hud-workspace-outgoing-left { opacity: 0; transform: scale(0.985) translateX(-16px); transition: opacity 220ms ease-in, transform 220ms ease-in; }
+.hud-workspace-outgoing-right { opacity: 0; transform: scale(0.985) translateX(16px); transition: opacity 220ms ease-in, transform 220ms ease-in; }
+.hud-workspace-incoming { animation: hudWorkspaceIn 340ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+@keyframes hudWorkspaceIn { 0% { opacity: 0; transform: scale(0.985) translateX(var(--glide-from-x, 20px)); } 100% { opacity: 1; transform: scale(1) translateX(0); } }
+.stagger-card-1 { animation: cardEntrance 300ms ease-out 0ms backwards; }
+.stagger-card-2 { animation: cardEntrance 300ms ease-out 35ms backwards; }
+.stagger-card-3 { animation: cardEntrance 300ms ease-out 70ms backwards; }
+@keyframes cardEntrance { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .hud-workspace-container, .hud-scan-sweep, .hud-workspace-outgoing-left, .hud-workspace-outgoing-right, .hud-workspace-incoming, .stagger-card-1, .stagger-card-2, .stagger-card-3 { animation: none !important; transition: none !important; transform: none !important; } }
+</style></main>
+<!-- END: QuadrantContentArea -->
+<!-- BEGIN: SystemFooterStatusStrip -->
+<div class="absolute left-6 md:left-12 bottom-14 z-40 select-none flex flex-col items-start pointer-events-auto" id="cosmo-cam-container"><div class="absolute left-0 bottom-16 mb-2 w-[290px] rounded-2xl border border-cyan-400/30 text-left select-none animate-in fade-in zoom-in-95 duration-150 flex flex-col p-4 z-50 transition-all hidden" id="cosmo-cam-panel" style="background: rgba(6, 14, 28, 0.94); backdrop-filter: blur(24px); box-shadow: rgba(0, 0, 0, 0.85) 0px 16px 45px -8px, rgba(6, 182, 212, 0.2) 0px 0px 25px;"><div class="flex items-center justify-between pb-2 border-b border-white/10"><div class="flex items-center gap-1.5 text-[10px] font-mono tracking-widest text-cyan-400 uppercase"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500 shadow-[0_0_6px_#f43f5e]"></span></span><span class="font-bold">OPTICAL MOOD MONITOR</span></div><button aria-label="Close Camera Panel" class="text-white/40 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10 cursor-pointer" id="cosmo-cam-close" type="button"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div><div class="relative w-full aspect-[16/10] bg-slate-950/80 rounded-xl overflow-hidden border border-cyan-500/25 my-2.5 flex items-center justify-center"><video autoplay="" class="w-full h-full object-cover transform -scale-x-100 hidden" id="cosmo-cam-video" muted="" playsinline=""></video><div class="flex flex-col items-center justify-center gap-1.5 p-3 text-center" id="cosmo-cam-placeholder"><div class="relative w-10 h-10 rounded-full border border-cyan-400/40 bg-cyan-950/40 flex items-center justify-center text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]"><svg class="w-5 h-5 text-cyan-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path></svg></div><span class="text-[9px] font-mono tracking-widest text-cyan-300 uppercase">OPTICAL SCAN ACTIVE</span><span class="text-[8px] font-mono text-white/40">AI TELEMETRY LOCK // 60 FPS</span></div><div class="absolute top-1.5 left-1.5 w-2 h-2 border-t border-l border-cyan-400/60 pointer-events-none"></div><div class="absolute top-1.5 right-1.5 w-2 h-2 border-t border-r border-cyan-400/60 pointer-events-none"></div><div class="absolute bottom-1.5 left-1.5 w-2 h-2 border-b border-l border-cyan-400/60 pointer-events-none"></div><div class="absolute bottom-1.5 right-1.5 w-2 h-2 border-b border-r border-cyan-400/60 pointer-events-none"></div></div><div class="flex items-center justify-between bg-slate-900/90 border border-emerald-500/30 rounded-lg px-2.5 py-1.5 text-xs font-mono shadow-[0_0_8px_rgba(16,185,129,0.15)]" id="cosmo-mood-badge"><span class="flex items-center gap-1.5 text-emerald-400 text-[10px] font-bold tracking-wide"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]"></span>STATUS: OPTIMAL / FOCUSED</span><span class="text-white/40 text-[9px]">CONF: 94%</span></div><!-- Live Sync & Alert Dispatch Toolbar --><div class="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[9px] font-mono"><div class="flex items-center gap-1.5 text-cyan-300"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f0ff]"></span><span class="tracking-wider uppercase">SYNCED TO FEED</span></div><button class="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-300 hover:text-amber-100 transition-colors uppercase tracking-wider font-semibold cursor-pointer shadow-[0_0_8px_rgba(245,158,11,0.2)]" id="log-alert-to-drawer-btn" title="Push real-time optical mood telemetry update to notification drawer" type="button">Log Alert to Drawer</button></div><p class="mt-2 text-[9px] font-mono text-white/40 tracking-wider text-center">On-device processing • Video never uploaded</p></div><button aria-expanded="false" aria-label="Open Optical Mood Monitor" class="relative group flex items-center justify-center rounded-full border backdrop-blur-md active:scale-95 transition-all duration-300 cursor-pointer cam-breathe-glow" id="cosmo-cam-trigger" style="width: 60px; height: 60px; background: radial-gradient(circle at 40% 40%, rgba(14, 116, 144, 0.95), rgba(8, 38, 68, 0.92)); border-color: rgba(56, 189, 248, 0.85); box-shadow: rgba(56, 189, 248, 0.6) 0px 0px 25px, rgba(0, 240, 255, 0.35) 0px 0px 45px;" type="button"><svg class="w-7 h-7 text-cyan-300 group-hover:scale-110 transition-transform duration-200 drop-shadow-[0_0_8px_#00f0ff]" fill="none" stroke="currentColor" style="color: #7dd3fc;" viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg><span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 shadow-[0_0_8px_#34d399]"></span></span></button></div><script id="cosmo-cam-controller">(function initCosmoCamera() { const btn = document.getElementById('cosmo-cam-trigger'); const panel = document.getElementById('cosmo-cam-panel'); const closeBtn = document.getElementById('cosmo-cam-close'); const video = document.getElementById('cosmo-cam-video'); const placeholder = document.getElementById('cosmo-cam-placeholder'); const logAlertBtn = document.getElementById('log-alert-to-drawer-btn'); let camStream = null; async function startCamera() { if (camStream || !navigator.mediaDevices?.getUserMedia) return; try { const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 480 }, height: { ideal: 320 } }, audio: false }); camStream = stream; if (video) { video.srcObject = stream; video.classList.remove('hidden'); if (placeholder) placeholder.classList.add('hidden'); } } catch (err) { /* graceful fallback to HUD optical scanner preview */ } } function stopCamera() { if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; } if (video) { video.srcObject = null; video.classList.add('hidden'); } if (placeholder) placeholder.classList.remove('hidden'); } function openCamPanel(highlight) { if (!panel) return; panel.classList.remove('hidden'); if (btn) btn.setAttribute('aria-expanded', 'true'); startCamera(); if (highlight) { panel.classList.remove('cam-highlight-active'); void panel.offsetWidth; panel.classList.add('cam-highlight-active'); setTimeout(() => { panel.classList.remove('cam-highlight-active'); }, 4800); } } function togglePanel() { const isHidden = panel.classList.contains('hidden'); if (isHidden) { openCamPanel(false); } else { panel.classList.add('hidden'); if (btn) btn.setAttribute('aria-expanded', 'false'); stopCamera(); } } // Global inspect link to open cam from notification feed window.inspectOpticalFeed = function(e) { if (e) e.stopPropagation(); const drawer = document.getElementById('notification-drawer'); const bellBtn = document.getElementById('notification-bell-btn'); if (drawer) drawer.classList.add('hidden'); if (bellBtn) bellBtn.setAttribute('aria-expanded', 'false'); openCamPanel(true); }; if (btn) btn.addEventListener('click', togglePanel); if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.add('hidden'); btn.setAttribute('aria-expanded', 'false'); stopCamera(); }); // Log Alert from Cam Panel directly into Notification Feed if (logAlertBtn) { logAlertBtn.addEventListener('click', function(e) { e.stopPropagation(); const now = new Date(); const utcTime = now.toTimeString().substring(0, 5) + ' UTC'; const feed = document.getElementById('notification-feed'); const badge = document.getElementById('notif-badge'); const countChip = document.getElementById('unread-count-chip'); if (badge) badge.classList.remove('hidden'); const existingItem = document.getElementById('optical-mood-alert-item'); const msgText = 'AFFECT SENSING UPDATE: Optical telemetry refreshed. Stress biomarkers: Low. Focus: 96% optimal.'; if (existingItem) { const textEl = document.getElementById('optical-alert-body-text'); if (textEl) textEl.innerHTML = `<span class="text-amber-300 font-semibold">LIVE REFRESH:</span> Affect stability confirmed. Focus 96%. All orbital crew micro-expressions nominal.`; const unreadDot = existingItem.querySelector('.notif-unread-dot'); if (unreadDot) unreadDot.classList.remove('opacity-0'); } else if (feed) { const newAlert = document.createElement('div'); newAlert.id = 'optical-mood-alert-item'; newAlert.className = 'p-2.5 rounded-xl border border-amber-500/50 bg-amber-950/30 hover:border-amber-400 hover:bg-amber-950/50 transition-all flex flex-col gap-2 group cursor-pointer shadow-[0_0_14px_rgba(245,158,11,0.2)]'; newAlert.onclick = function(ev) { if(window.inspectOpticalFeed) window.inspectOpticalFeed(ev); }; newAlert.innerHTML = ` <div class="flex items-start gap-2.5"> <div class="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-400/60 flex items-center justify-center shrink-0 mt-0.5 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.3)] group-hover:scale-105 transition-transform"> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg> </div> <div class="flex-1 min-w-0"> <div class="flex items-center justify-between"> <div class="flex items-center gap-1.5"> <span class="notif-unread-dot w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]"></span> <span class="text-[11px] font-bold text-amber-300 tracking-wide uppercase">OPTICAL BIO-METRIC & MOOD</span> </div> <span class="text-[9px] text-amber-400/90 font-bold font-mono">${utcTime}</span> </div> <p class="text-[10px] text-white/85 leading-relaxed mt-1 font-sans" id="optical-alert-body-text">${msgText}</p> </div> </div> <div class="flex items-center justify-between pt-1 border-t border-amber-500/20 mt-0.5"> <div class="flex items-center gap-1 text-[9px] font-mono text-amber-400/80"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span><span>PRIORITY: AMBER // OPTICAL TELEMETRY</span></div> <button type="button" onclick="event.stopPropagation(); if(window.inspectOpticalFeed) window.inspectOpticalFeed(event);" class="px-2 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 border border-cyan-400/50 text-[9px] font-mono font-bold tracking-wider hover:text-white transition-all cursor-pointer">INSPECT OPTICAL FEED →</button> </div>`; feed.prepend(newAlert); } const unreadCount = document.querySelectorAll('.notif-unread-dot:not(.opacity-0)').length; if (countChip) { countChip.innerText = `${unreadCount || 1} ACTIVE`; countChip.className = 'text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'; } logAlertBtn.innerText = 'LOGGED ✓'; setTimeout(() => { logAlertBtn.innerText = 'Log Alert to Drawer'; }, 2200); }); } document.addEventListener('click', (e) => { const container = document.getElementById('cosmo-cam-container'); if (panel && !panel.classList.contains('hidden') && container) { if (!container.contains(e.target) && !e.target.closest('#notification-drawer')) { panel.classList.add('hidden'); btn.setAttribute('aria-expanded', 'false'); stopCamera(); } } }); document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel && !panel.classList.contains('hidden')) { panel.classList.add('hidden'); btn.setAttribute('aria-expanded', 'false'); stopCamera(); } }); })();</script><div class="absolute right-6 md:right-12 bottom-14 z-40 select-none flex flex-col items-end pointer-events-auto" id="dora-ai-container"><button aria-expanded="false" aria-label="Open Dora AI Co-Pilot" class="relative group flex items-center gap-3.5 pl-2 py-2 rounded-full border backdrop-blur-xl transition-all duration-300 hover:scale-[1.03] cursor-pointer pr-6 border-cyan-400 dora-breathe-btn" id="dora-trigger-btn" style="background: linear-gradient(135deg, rgba(8, 38, 68, 0.95), rgba(4, 18, 36, 0.98)); box-shadow: rgba(6, 182, 212, 0.6) 0px 0px 20px, rgba(6, 182, 212, 0.3) 0px 0px 40px, rgba(6, 182, 212, 0.35) 0px 0px 15px inset;" type="button"><div class="relative flex items-center justify-center w-12 h-12 rounded-full border border-cyan-300 text-cyan-100 shrink-0 transition-transform duration-300 group-hover:scale-105 dora-avatar-glow" style="background: radial-gradient(circle, rgba(6, 212, 250, 0.65) 0%, rgba(6, 182, 212, 0.28) 65%, rgba(4, 18, 36, 0.8) 100%); box-shadow: rgb(0, 240, 255) 0px 0px 20px, rgba(6, 182, 212, 0.8) 0px 0px 10px inset;"><span class="absolute inset-0 rounded-full bg-cyan-400 opacity-60 animate-ping"></span><svg class="w-6 h-6 text-white relative z-10 transition-transform duration-300 group-hover:rotate-6 drop-shadow-[0_0_8px_#00f0ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></div><div class="flex flex-1 items-center justify-center px-1"><span class="font-mono font-bold text-2xl tracking-widest text-cyan-100 group-hover:text-white transition-colors uppercase leading-none" style="filter: drop-shadow(rgba(6, 182, 212, 0.8) 0px 0px 10px); text-shadow: rgba(6, 182, 212, 0.9) 0px 0px 12px;">DORA</span></div><span class="relative flex h-2.5 w-2.5 ml-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 shadow-[0_0_8px_#34d399]"></span></span></button><div class="hidden absolute right-0 bottom-16 mb-2 w-80 md:w-[420px] rounded-2xl border border-cyan-500/30 text-left select-none animate-in fade-in zoom-in-95 duration-150 flex flex-col" id="dora-chat-drawer" style="background: rgba(8, 14, 28, 0.94); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: 0 20px 50px -10px rgba(0,0,0,0.85), 0 0 25px rgba(6, 182, 212, 0.2); max-height: calc(100vh - 120px); height: 535px;"><div class="p-3.5 pb-2.5 border-b border-white/10 shrink-0 flex items-center justify-between"><div class="flex items-center gap-2.5"><div class="relative w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg><span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></span></div><div><div class="flex items-center gap-1.5"><h3 class="text-xs font-mono font-bold tracking-widest text-white uppercase">DORA // CO-PILOT BIO-AI</h3><span class="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">SYS V4.8</span></div><p class="text-[9px] font-mono text-white/50 tracking-wider truncate">Autonomous Medical &amp; Life-Support Companion</p></div></div><div class="flex items-center gap-2"><!-- Voice Auto-Play Speech Toggle Button --><button class="flex items-center gap-1 px-1.5 py-1 rounded-md border border-cyan-400/30 bg-cyan-950/40 text-[9px] font-mono text-cyan-300 hover:text-white transition-all cursor-pointer" id="dora-auto-voice-toggle" title="Toggle Auto-Voice Synthesis" type="button"><svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg><span class="font-bold" id="auto-voice-state">VOICE: ON</span></button><button class="text-[10px] font-mono text-white/40 hover:text-cyan-300 transition-colors p-1" id="dora-clear-btn" title="Clear conversation" type="button">CLEAR</button><button aria-label="Close Dora" class="text-white/40 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10 cursor-pointer" id="dora-close-btn" type="button"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div></div><div class="p-3.5 flex-1 flex flex-col gap-3 overflow-y-auto font-mono text-xs" id="dora-messages-container"><div class="flex items-start gap-2.5" data-message-id="welcome"><div class="w-6 h-6 rounded-md bg-cyan-950/60 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0 text-[10px] font-bold shadow-[0_0_6px_rgba(6,182,212,0.2)]">D</div><div class="p-2.5 rounded-xl rounded-tl-none border border-cyan-500/20 bg-slate-900/60 max-w-[88%] w-full"><p class="text-[11px] text-white/90 leading-relaxed font-sans dora-msg-text">Greetings, Commander Vance. I am Dora, your mission health &amp; telemetry AI agent. Bio-vitals are optimal across Expedition 73. How can I assist your mission or medical status today?</p><!-- Voice Synthesis Audio Player Widget --><div class="mt-2.5 pt-2 border-t border-cyan-500/20 flex flex-col gap-1.5"><div class="flex items-center justify-between text-[9px] font-mono"><div class="flex items-center gap-1.5 text-cyan-300"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 voice-status-dot"></span><span class="voice-status-text tracking-wider uppercase font-medium">AUDIO READY [24kHz]</span></div><span class="text-white/40 voice-timer tracking-widest">00:00 / 00:06</span></div><div class="flex items-center gap-2"><button class="voice-synth-play-btn w-6 h-6 rounded-full bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 flex items-center justify-center text-cyan-300 transition-all shrink-0 cursor-pointer shadow-[0_0_8px_rgba(6,182,212,0.25)]" data-voice-bound="true" type="button"><svg class="w-3 h-3 play-icon ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="w-3 h-3 pause-icon hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg></button><div class="flex-1 flex items-center gap-0.5 h-5 px-1.5 rounded-md bg-black/40 border border-white/5 waveform-container overflow-hidden"><div class="wave-bar w-1 rounded-full bg-cyan-400"></div><div class="wave-bar w-1 rounded-full bg-cyan-400"></div><div class="wave-bar w-1 rounded-full bg-cyan-300"></div><div class="wave-bar w-1 rounded-full bg-cyan-300"></div><div class="wave-bar w-1 rounded-full bg-cyan-400"></div><div class="wave-bar w-1 rounded-full bg-cyan-400"></div><div class="wave-bar w-1 rounded-full bg-cyan-300"></div><div class="wave-bar w-1 rounded-full bg-cyan-300"></div><div class="wave-bar w-1 rounded-full bg-cyan-400"></div><div class="wave-bar w-1 rounded-full bg-cyan-400"></div><div class="wave-bar w-1 rounded-full bg-cyan-300"></div><div class="wave-bar w-1 rounded-full bg-cyan-300"></div><div class="wave-bar w-1 rounded-full bg-cyan-400"></div><div class="wave-bar w-1 rounded-full bg-cyan-400"></div><div class="wave-bar w-1 rounded-full bg-cyan-300"></div><div class="wave-bar w-1 rounded-full bg-cyan-300"></div><div class="wave-bar w-1 rounded-full bg-cyan-400"></div><div class="wave-bar w-1 rounded-full bg-cyan-400"></div></div><span class="text-[8px] font-mono text-cyan-400/80 px-1 py-0.5 rounded bg-cyan-950/70 border border-cyan-400/30">VOC-01</span></div></div><div class="mt-1.5 text-[8px] text-white/30 tracking-wider font-mono flex items-center justify-between"><span>DORA ENGINE • READY</span><span class="text-cyan-400/50">SYNTHESIS LOCK: NOMINAL</span></div></div></div><div class="flex flex-wrap gap-1.5 pt-1"><button class="dora-suggestion px-2 py-1 rounded-lg border border-cyan-400/30 bg-cyan-950/40 hover:bg-cyan-500/20 text-cyan-300 text-[10px] font-mono transition-colors cursor-pointer" type="button">Crew Health Summary</button><button class="dora-suggestion px-2 py-1 rounded-lg border border-cyan-400/30 bg-cyan-950/40 hover:bg-cyan-500/20 text-cyan-300 text-[10px] font-mono transition-colors cursor-pointer" type="button">Radiation Check</button><button class="dora-suggestion px-2 py-1 rounded-lg border border-cyan-400/30 bg-cyan-950/40 hover:bg-cyan-500/20 text-cyan-300 text-[10px] font-mono transition-colors cursor-pointer" type="button">Life-Support Diagnostics</button><button class="dora-suggestion px-2 py-1 rounded-lg border border-cyan-400/30 bg-cyan-950/40 hover:bg-cyan-500/20 text-cyan-300 text-[10px] font-mono transition-colors cursor-pointer" type="button">Schedule Bio-Triage</button></div></div><div class="p-3 border-t border-white/10 bg-slate-950/80 rounded-b-2xl shrink-0 flex flex-col gap-2"><form class="flex items-center gap-2" id="dora-chat-form"><div class="relative flex-1"><input autocomplete="off" class="w-full bg-slate-900/80 border border-white/15 focus:border-cyan-400 rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-cyan-400 font-sans tracking-wide pr-8" id="dora-chat-input" placeholder="Ask Dora or query telemetry..." type="text"><button class="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-cyan-300 transition-colors cursor-pointer" id="dora-mic-btn" title="Voice input" type="button"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div><button class="px-3 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-300 flex items-center justify-center transition-all cursor-pointer shadow-[0_0_10px_rgba(6,182,212,0.2)]" id="dora-send-btn" type="submit"><svg class="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 19V5m0 0l-7 7m7-7l7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></form><div class="flex items-center justify-between text-[8px] font-mono text-white/40 tracking-wider"><span>API HOOK: POST /api/v1/dora/chat</span><span class="text-cyan-400/80">SYNTH ENGINE: 24kHz DUAL-CH</span></div></div></div></div><footer class="relative z-20 w-full border-t border-white/10 bg-slate-950/80 backdrop-blur-xl px-6 md:px-12 py-2.5 flex flex-wrap items-center justify-between text-[11px] font-mono text-white/50" data-purpose="hud-status-footer">
+<!-- Telemetry Status Nodes -->
+<div class="flex items-center gap-6">
+<span class="inline-flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+<span class="text-white/70">CORE AUTONOMY:</span>
+<span class="text-white font-medium">OPTIMAL</span>
+</span>
+<span class="hidden sm:inline-flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+<span class="text-white/70">RAD SHIELDING:</span>
+<span class="text-white font-medium">NOMINAL (99.4%)</span>
+</span>
+<span class="hidden md:inline-flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+<span class="text-white/70">CREW VITALS:</span>
+<span class="text-emerald-400 font-medium">SYNCED (6/6)</span>
+</span>
+</div>
+<!-- System Version & Encryption Note -->
+<div class="flex items-center gap-4 text-[10px] tracking-wider">
+<span class="text-white/40 hidden lg:inline">QUANTUM ENCRYPTED TRANSMISSION</span>
+<span class="text-cyan-400/80">CC-OS // V4.8.2</span>
+</div>
+</footer>
+<!-- END: SystemFooterStatusStrip -->
+</div>
+<!-- END: MasterViewportContainer -->
+<!-- Global Event Listeners for Outside Clicks & Escape Key -->
+<script>
+  document.addEventListener('click', function(event) {
+    const notifDrawer = document.getElementById('notification-drawer');
+    const notifBtn = document.getElementById('notification-bell-btn');
+    if (notifDrawer && !notifDrawer.classList.contains('hidden')) {
+      if (!notifDrawer.contains(event.target) && !notifBtn.contains(event.target)) {
+        notifDrawer.classList.add('hidden');
+        if (notifBtn) notifBtn.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    const profileMenu = document.getElementById('crew-profile-menu');
+    const profileBtn = document.getElementById('crew-profile-btn');
+    if (profileMenu && !profileMenu.classList.contains('hidden')) {
+      if (!profileMenu.contains(event.target) && !profileBtn.contains(event.target)) {
+        profileMenu.classList.add('hidden');
+        if (profileBtn) profileBtn.setAttribute('aria-expanded', 'false');
+      }
+    }
+  });
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      const notifDrawer = document.getElementById('notification-drawer');
+      const notifBtn = document.getElementById('notification-bell-btn');
+      if (notifDrawer && !notifDrawer.classList.contains('hidden')) {
+        notifDrawer.classList.add('hidden');
+        if (notifBtn) notifBtn.setAttribute('aria-expanded', 'false');
+      }
+
+      const profileMenu = document.getElementById('crew-profile-menu');
+      const profileBtn = document.getElementById('crew-profile-btn');
+      if (profileMenu && !profileMenu.classList.contains('hidden')) {
+        profileMenu.classList.add('hidden');
+        if (profileBtn) profileBtn.setAttribute('aria-expanded', 'false');
+      }
+    }
+  });
+</script>
+<script id="dora-controller-script">(function initDoraAI() {
+  const btn = document.getElementById('dora-trigger-btn');
+  const drawer = document.getElementById('dora-chat-drawer');
+  const closeBtn = document.getElementById('dora-close-btn');
+  const clearBtn = document.getElementById('dora-clear-btn');
+  const form = document.getElementById('dora-chat-form');
+  const input = document.getElementById('dora-chat-input');
+  const messages = document.getElementById('dora-messages-container');
+  const autoVoiceToggle = document.getElementById('dora-auto-voice-toggle');
+  const autoVoiceState = document.getElementById('auto-voice-state');
+
+  let autoVoice = true;
+  let currentActiveVoiceWidget = null;
+  let simulatedTimerInterval = null;
+
+  if (autoVoiceToggle && autoVoiceState) {
+    autoVoiceToggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      autoVoice = !autoVoice;
+      autoVoiceState.textContent = autoVoice ? 'VOICE: ON' : 'VOICE: OFF';
+      autoVoiceToggle.classList.toggle('border-cyan-400/50', autoVoice);
+      autoVoiceToggle.classList.toggle('text-cyan-300', autoVoice);
+      autoVoiceToggle.classList.toggle('text-white/40', !autoVoice);
+      autoVoiceToggle.classList.toggle('border-white/10', !autoVoice);
+    });
+  }
+
+  function stopCurrentAudio() {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    if (simulatedTimerInterval) {
+      clearInterval(simulatedTimerInterval);
+      simulatedTimerInterval = null;
+    }
+    if (currentActiveVoiceWidget) {
+      const waveContainer = currentActiveVoiceWidget.querySelector('.waveform-container');
+      const playIcon = currentActiveVoiceWidget.querySelector('.play-icon');
+      const pauseIcon = currentActiveVoiceWidget.querySelector('.pause-icon');
+      const statusText = currentActiveVoiceWidget.querySelector('.voice-status-text');
+      const statusDot = currentActiveVoiceWidget.querySelector('.voice-status-dot');
+
+      if (waveContainer) waveContainer.classList.remove('wave-playing');
+      if (playIcon) playIcon.classList.remove('hidden');
+      if (pauseIcon) pauseIcon.classList.add('hidden');
+      if (statusText) statusText.textContent = 'AUDIO READY [24kHz]';
+      if (statusDot) {
+        statusDot.className = 'w-1.5 h-1.5 rounded-full bg-cyan-400 voice-status-dot';
+      }
+      currentActiveVoiceWidget = null;
+    }
+  }
+
+  function playVoiceSynthesis(widget, text) {
+    if (currentActiveVoiceWidget === widget) {
+      stopCurrentAudio();
+      return;
+    }
+    stopCurrentAudio();
+
+    currentActiveVoiceWidget = widget;
+    const waveContainer = widget.querySelector('.waveform-container');
+    const playIcon = widget.querySelector('.play-icon');
+    const pauseIcon = widget.querySelector('.pause-icon');
+    const statusText = widget.querySelector('.voice-status-text');
+    const statusDot = widget.querySelector('.voice-status-dot');
+    const timer = widget.querySelector('.voice-timer');
+
+    if (waveContainer) waveContainer.classList.add('wave-playing');
+    if (playIcon) playIcon.classList.add('hidden');
+    if (pauseIcon) pauseIcon.classList.remove('hidden');
+    if (statusText) statusText.textContent = 'SYNTHESIZING...';
+    if (statusDot) {
+      statusDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 voice-status-dot animate-ping';
+    }
+
+    const approxSeconds = Math.max(3, Math.round(text.length / 18));
+    let elapsed = 0;
+    if (timer) timer.textContent = `00:00 / 00:${approxSeconds < 10 ? '0' + approxSeconds : approxSeconds}`;
+
+    simulatedTimerInterval = setInterval(() => {
+      elapsed++;
+      if (timer) {
+        const mm = '00';
+        const ss = elapsed < 10 ? '0' + elapsed : elapsed;
+        const tot = approxSeconds < 10 ? '0' + approxSeconds : approxSeconds;
+        timer.textContent = `${mm}:${ss} / ${mm}:${tot}`;
+      }
+      if (elapsed >= approxSeconds) {
+        stopCurrentAudio();
+      }
+    }, 1000);
+
+    if ('speechSynthesis' in window) {
+      try {
+        const cleanText = text.replace(/CC-OS|MET|BPM|mSv\/day|CO2|O2|EVA|HAB/g, function(match) {
+          if (match === 'CC-OS') return 'Cosmo Care OS';
+          if (match === 'MET') return 'Mission Elapsed Time';
+          if (match === 'BPM') return 'beats per minute';
+          if (match === 'CO2') return 'C O 2';
+          if (match === 'O2') return 'oxygen';
+          if (match === 'EVA') return 'E V A';
+          if (match === 'HAB') return 'habitat';
+          return match;
+        });
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.rate = 1.05;
+        utterance.pitch = 1.02;
+
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Zira') || v.name.includes('Victoria')));
+        if (preferredVoice) utterance.voice = preferredVoice;
+
+        utterance.onend = function() {
+          stopCurrentAudio();
+        };
+        utterance.onerror = function() {
+          stopCurrentAudio();
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        // Fallback gracefully runs timer
+      }
+    }
+  }
+
+  function attachVoiceEvents(rootElement) {
+    const playBtns = (rootElement || document).querySelectorAll('.voice-synth-play-btn');
+    playBtns.forEach(btn => {
+      if (btn.dataset.voiceBound) return;
+      btn.dataset.voiceBound = 'true';
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const widget = btn.closest('.flex-col');
+        const textElement = widget?.parentElement?.querySelector('.dora-msg-text');
+        const textToSpeak = textElement ? textElement.innerText : 'Telemetry transmission synchronized.';
+        playVoiceSynthesis(widget, textToSpeak);
+      });
+    });
+  }
+
+  // Initialize welcome voice button
+  attachVoiceEvents(document);
+
+  if (!btn || !drawer) return;
+
+  function toggleDrawer() {
+    const isHidden = drawer.classList.contains('hidden');
+    if (isHidden) {
+      drawer.classList.remove('hidden');
+      btn.setAttribute('aria-expanded', 'true');
+      if (input) input.focus();
+    } else {
+      drawer.classList.add('hidden');
+      btn.setAttribute('aria-expanded', 'false');
+      stopCurrentAudio();
+    }
+  }
+
+  btn.addEventListener('click', toggleDrawer);
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      drawer.classList.add('hidden');
+      btn.setAttribute('aria-expanded', 'false');
+      stopCurrentAudio();
+    });
+  }
+
+  if (clearBtn && messages) {
+    clearBtn.addEventListener('click', function() {
+      stopCurrentAudio();
+      messages.innerHTML = `
+        <div class="flex items-start gap-2.5" data-message-id="welcome">
+          <div class="w-6 h-6 rounded-md bg-cyan-950/60 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0 text-[10px] font-bold shadow-[0_0_6px_rgba(6,182,212,0.2)]">D</div>
+          <div class="p-2.5 rounded-xl rounded-tl-none border border-cyan-500/20 bg-slate-900/60 max-w-[88%] w-full">
+            <p class="text-[11px] text-white/90 leading-relaxed font-sans dora-msg-text">Telemetry thread reset. How can I assist you now, Commander?</p>
+            <div class="mt-2.5 pt-2 border-t border-cyan-500/20 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between text-[9px] font-mono">
+                <div class="flex items-center gap-1.5 text-cyan-300">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 voice-status-dot"></span>
+                  <span class="voice-status-text tracking-wider uppercase font-medium">AUDIO READY [24kHz]</span>
+                </div>
+                <span class="text-white/40 voice-timer tracking-widest">00:00 / 00:03</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" class="voice-synth-play-btn w-6 h-6 rounded-full bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 flex items-center justify-center text-cyan-300 transition-all shrink-0 cursor-pointer shadow-[0_0_8px_rgba(6,182,212,0.25)]">
+                  <svg class="w-3 h-3 play-icon ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                  <svg class="w-3 h-3 pause-icon hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                </button>
+                <div class="flex-1 flex items-center gap-0.5 h-5 px-1.5 rounded-md bg-black/40 border border-white/5 waveform-container overflow-hidden">
+                  ${Array(18).fill(0).map((_, i) => `<div class="wave-bar w-1 rounded-full ${i % 2 === 0 ? 'bg-cyan-400' : 'bg-cyan-300'}"></div>`).join('')}
+                </div>
+                <span class="text-[8px] font-mono text-cyan-400/80 px-1 py-0.5 rounded bg-cyan-950/70 border border-cyan-400/30">VOC-RST</span>
+              </div>
+            </div>
+            <div class="mt-1.5 text-[8px] text-white/30 tracking-wider font-mono">DORA ENGINE • READY</div>
+          </div>
+        </div>`;
+      attachVoiceEvents(messages);
+    });
+  }
+
+  function appendMessage(text, isUser) {
+    if (!messages) return;
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'flex items-start gap-2.5 ' + (isUser ? 'justify-end' : '');
+
+    if (isUser) {
+      msgDiv.innerHTML = `
+        <div class="p-2.5 rounded-xl rounded-tr-none border border-cyan-400/40 bg-cyan-500/15 max-w-[85%]">
+          <p class="text-[11px] text-cyan-100 leading-relaxed font-sans">${text}</p>
+          <div class="mt-1 text-[8px] text-cyan-400/60 tracking-wider text-right font-mono">YOU • JUST NOW</div>
+        </div>`;
+    } else {
+      const approxDuration = Math.max(3, Math.round(text.length / 18));
+      const vocTag = 'VOC-0' + Math.floor(Math.random() * 8 + 2);
+      msgDiv.innerHTML = `
+        <div class="w-6 h-6 rounded-md bg-cyan-950/60 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0 text-[10px] font-bold shadow-[0_0_6px_rgba(6,182,212,0.2)]">D</div>
+        <div class="p-2.5 rounded-xl rounded-tl-none border border-cyan-500/20 bg-slate-900/60 max-w-[88%] w-full">
+          <p class="text-[11px] text-white/90 leading-relaxed font-sans dora-msg-text">${text}</p>
+          <div class="mt-2.5 pt-2 border-t border-cyan-500/20 flex flex-col gap-1.5">
+            <div class="flex items-center justify-between text-[9px] font-mono">
+              <div class="flex items-center gap-1.5 text-cyan-300">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 voice-status-dot"></span>
+                <span class="voice-status-text tracking-wider uppercase font-medium">AUDIO READY [24kHz]</span>
+              </div>
+              <span class="text-white/40 voice-timer tracking-widest">00:00 / 00:${approxDuration < 10 ? '0' + approxDuration : approxDuration}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" class="voice-synth-play-btn w-6 h-6 rounded-full bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 flex items-center justify-center text-cyan-300 transition-all shrink-0 cursor-pointer shadow-[0_0_8px_rgba(6,182,212,0.25)]">
+                <svg class="w-3 h-3 play-icon ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                <svg class="w-3 h-3 pause-icon hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+              </button>
+              <div class="flex-1 flex items-center gap-0.5 h-5 px-1.5 rounded-md bg-black/40 border border-white/5 waveform-container overflow-hidden">
+                ${Array(18).fill(0).map((_, i) => `<div class="wave-bar w-1 rounded-full ${i % 2 === 0 ? 'bg-cyan-400' : 'bg-cyan-300'}"></div>`).join('')}
+              </div>
+              <span class="text-[8px] font-mono text-cyan-400/80 px-1 py-0.5 rounded bg-cyan-950/70 border border-cyan-400/30">${vocTag}</span>
+            </div>
+          </div>
+          <div class="mt-1.5 text-[8px] text-white/30 tracking-wider font-mono flex items-center justify-between">
+            <span>DORA ENGINE • NOMINAL</span>
+            <span class="text-cyan-400/50">VOICE MATRIX ONLINE</span>
+          </div>
+        </div>`;
+    }
+
+    messages.appendChild(msgDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    if (!isUser) {
+      attachVoiceEvents(msgDiv);
+      if (autoVoice) {
+        const widget = msgDiv.querySelector('.flex-col');
+        if (widget) playVoiceSynthesis(widget, text);
+      }
+    }
+  }
+
+  function getAIResponse(prompt) {
+    const p = prompt.toLowerCase();
+    if (p.includes('radiation') || p.includes('shield')) {
+      return 'Deflection array is operating at 99.4% nominal field efficiency. Solar particle index is quiet; ambient cabin radiation remains at 0.08 mSv/day.';
+    } else if (p.includes('crew') || p.includes('health') || p.includes('vital')) {
+      return 'All 6 Expedition-73 astronauts display optimal telemetry. Commander Vance cardiac rate stabilized to 72 BPM following EVA ingress. Sleep cadence index is 94%.';
+    } else if (p.includes('habitat') || p.includes('life-support') || p.includes('diagnostics')) {
+      return 'Life-support systems nominal. O2 partial pressure 21.2 kPa, cabin temperature 21.5°C, CO2 scrubber cycle running at 100% capacity.';
+    } else if (p.includes('triage') || p.includes('schedule')) {
+      return 'Bio-Triage window scheduled for 04H 12M. Ares-V telemetry lock verified for quadrant synchronization.';
+    }
+    return 'Understood, Commander Vance. Telemetry query acknowledged: "' + prompt + '". Telemetry and habitat logs verified as mission-ready.';
+  }
+
+  function handleSubmit(text) {
+    if (!text.trim()) return;
+    appendMessage(text, true);
+    if (input) input.value = '';
+    setTimeout(function() {
+      const reply = getAIResponse(text);
+      appendMessage(reply, false);
+    }, 650);
+  }
+
+  if (form && input) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      handleSubmit(input.value);
+    });
+  }
+
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList.contains('dora-suggestion')) {
+      handleSubmit(e.target.textContent || '');
+    }
+    const doraContainer = document.getElementById('dora-ai-container');
+    if (drawer && !drawer.classList.contains('hidden') && doraContainer) {
+      if (!doraContainer.contains(e.target)) {
+        drawer.classList.add('hidden');
+        btn.setAttribute('aria-expanded', 'false');
+        stopCurrentAudio();
+      }
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && drawer && !drawer.classList.contains('hidden')) {
+      drawer.classList.add('hidden');
+      btn.setAttribute('aria-expanded', 'false');
+      stopCurrentAudio();
+    }
+  });
+})();</script><script id="hud-page-transition-controller">(function initHUDTransitions() {
+  const currentTabIndex = 0;
+  const workspace = document.querySelector('main[data-purpose="quadrant-content-container"]');
+  const scanLine = document.getElementById('hud-scan-line');
+  const dockTabs = document.querySelectorAll('.dock-tab');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Check if incoming transition is defined in history or session
+  const incomingDirection = sessionStorage.getItem('hud_nav_direction');
+  if (incomingDirection && workspace && !reducedMotion) {
+    const fromX = incomingDirection === 'right' ? '20px' : '-20px';
+    workspace.style.setProperty('--glide-from-x', fromX);
+    workspace.classList.add('hud-workspace-incoming');
+    if (scanLine) {
+      scanLine.classList.add('active');
+      setTimeout(() => scanLine.classList.remove('active'), 320);
+    }
+    sessionStorage.removeItem('hud_nav_direction');
+  }
+
+  dockTabs.forEach((tab) => {
+    tab.addEventListener('click', function(e) {
+      const targetIndex = parseInt(this.getAttribute('data-tab-index') || '0', 10);
+      const href = this.getAttribute('href');
+      if (!href || href === '#' || href.startsWith('#') || targetIndex === currentTabIndex) return;
+      if (reducedMotion) return;
+
+      e.preventDefault();
+      const direction = targetIndex > currentTabIndex ? 'right' : 'left';
+      sessionStorage.setItem('hud_nav_direction', direction);
+
+      // Trigger cyan scan-line sweep
+      if (scanLine) {
+        scanLine.classList.remove('active');
+        void scanLine.offsetWidth;
+        scanLine.classList.add('active');
+      }
+
+      // Outgoing direction-aware spatial drift and scale
+      if (workspace) {
+        if (direction === 'right') {
+          workspace.classList.add('hud-workspace-outgoing-left');
+        } else {
+          workspace.classList.add('hud-workspace-outgoing-right');
+        }
+      }
+
+      setTimeout(() => {
+        window.location.href = href;
+      }, 220);
+    });
+  });
+})();</script>
+
+
+</body></html>
