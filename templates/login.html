@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cosmo Care - Astronaut Telemetry &amp; Mission Portal</title>
+<!-- Tailwind CSS CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cosmo: {
+              emerald: '#10b981',
+              accent: '#22c55e',
+              glow: 'rgba(34, 197, 94, 0.45)',
+              dark: '#080c14',
+              card: '#0f1522',
+              input: '#0b1019'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@200..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Core Layout Styles -->
+<style data-purpose="custom-styling">
+    body {
+      background: radial-gradient(circle at 50% 20%, #151d2f 0%, #080c14 65%, #04060a 100%);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ambient stars / cosmic speckles */
+    .space-stars {
+      background-image: 
+        radial-gradient(1.5px 1.5px at 15% 25%, rgba(255, 255, 255, 0.45), transparent),
+        radial-gradient(1px 1px at 75% 15%, rgba(255, 255, 255, 0.35), transparent),
+        radial-gradient(1.5px 1.5px at 85% 70%, rgba(56, 189, 248, 0.3), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255, 255, 255, 0.3), transparent),
+        radial-gradient(2px 2px at 60% 85%, rgba(34, 197, 94, 0.25), transparent);
+    }
+
+    /* Shell Glass Modal */
+    .portal-frame {
+      background: rgba(13, 18, 28, 0.88);
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 35px 80px -15px rgba(0, 0, 0, 0.85), 0 0 50px -10px rgba(16, 185, 129, 0.07);
+    }
+
+    /* Inner Login Box */
+    .form-panel {
+      background: rgba(17, 23, 36, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.65);
+    }
+
+    /* Glowing Inputs */
+    .cosmo-field {
+      background: rgba(10, 14, 22, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.2s ease-in-out;
+    }
+    .cosmo-field:focus-within {
+      border-color: #22c55e;
+      background: rgba(13, 19, 31, 0.95);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15), 0 0 16px rgba(34, 197, 94, 0.2);
+    }
+
+    /* Input Error State */
+    .cosmo-field-error {
+      border-color: rgba(244, 63, 94, 0.85) !important;
+      background: rgba(26, 12, 18, 0.92) !important;
+      box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.25), 0 0 14px rgba(244, 63, 94, 0.35) !important;
+    }
+
+    /* Subtle sci-fi shake animation */
+    @keyframes sci-fi-shake {
+      0%, 100% { transform: translateX(0); }
+      15%, 45%, 75% { transform: translateX(-6px); }
+      30%, 60%, 90% { transform: translateX(6px); }
+    }
+    .shake-animate {
+      animation: sci-fi-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    /* Button Glow */
+    .btn-cosmo-glow {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      box-shadow: 0 6px 20px -2px rgba(34, 197, 94, 0.45);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-cosmo-glow:hover {
+      background: linear-gradient(135deg, #2ae06c 0%, #15803d 100%);
+      box-shadow: 0 10px 28px 0 rgba(34, 197, 94, 0.65);
+      transform: translateY(-1px);
+    }
+    .btn-cosmo-glow:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 12px -2px rgba(34, 197, 94, 0.4);
+    }
+
+    /* Screen Transitions */
+    .view-transition {
+      transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+<body class="space-stars text-slate-100 min-h-screen select-none relative overflow-x-hidden m-0 p-0">
+<!-- Subtle Ambient Glow Orbs in Background -->
+<div class="fixed top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+<div class="fixed bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none -z-10"></div>
+<!-- BEGIN: ApplicationRoot -->
+<div class="fixed inset-0 w-full h-full -z-10 overflow-hidden pointer-events-none"><img alt="Cosmo Care Astronaut" class="w-full h-full object-cover object-center" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa-BLP95SFGKKF7_b6f99t_z0-3qns_S86axe_vI-4zB3W6jfBPRYFP5QOi9o0jElZW0fWaPXAdgkLVn7uHVFeV3ZArm_BgmVw3x1F_JEUYucLzhKcen-1apxRgSaD6Td9PDlqTCX5BVbxVdViQxbQiSU-_lsTCzHi6UXuqgMXayycUot5qbgs0aHNMrn2145D2yVbIp1u2JRqg2AYwT56m8CPBpDJi5UVt7IeAUC8"/><div class="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]"></div><div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-slate-950/60"></div><div class="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-transparent to-slate-950/80"></div></div><main class="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-8 relative z-10" data-purpose="app-container">
+<!-- BEGIN: LoginView -->
+<section class="view-transition relative w-full max-w-5xl rounded-3xl overflow-hidden backdrop-blur-md bg-slate-950/40 border border-white/10 shadow-2xl" data-purpose="login-screen" id="login-view"><div class="flex flex-col lg:flex-row items-center justify-between min-h-[560px] p-6 sm:p-8 lg:p-10 gap-8 w-full max-w-5xl"><div class="w-full lg:w-1/2 flex flex-col justify-between space-y-6"><div class="flex items-center"><span class="inline-flex items-center px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wider uppercase bg-slate-950/80 text-emerald-400 border border-emerald-500/40 backdrop-blur-md shadow-lg"><span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>ORBITAL TELEMETRY ACTIVE</span></div><div class="space-y-4"><div class="inline-block p-6 rounded-3xl backdrop-blur-xl border border-white/10 shadow-2xl bg-slate-950/50"><div class="flex flex-col items-start justify-center"><div class="flex items-center space-x-2.5 mb-2"><span class="text-3xl sm:text-4xl font-extrabold tracking-wider text-white inline-flex items-center">COSMO</span><span class="text-3xl sm:text-4xl font-extrabold tracking-wider text-cyan-400 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]">CARE</span></div><span class="text-xs sm:text-sm font-semibold text-emerald-400 tracking-[0.28em] uppercase">Healthcare Beyond Earth</span><p class="text-xs text-slate-300 mt-3 font-normal max-w-sm leading-relaxed">Deep space bio-telemetry, autonomous medical diagnostics, and mission-critical life support systems.</p></div></div></div><div class="flex items-center space-x-3 text-xs font-mono text-slate-400"><span class="px-3 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800/80 backdrop-blur-md"><span class="text-emerald-400 font-bold mr-1">SEC-ID:</span>ARES-V</span><span class="px-3 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800/80 backdrop-blur-md"><span class="text-cyan-400 font-bold mr-1">SYS:</span>NOMINAL</span></div></div><div class="w-full lg:w-5/12 flex items-center justify-center"><div class="w-full form-panel rounded-3xl p-6 sm:p-8 flex flex-col justify-center relative backdrop-blur-2xl bg-slate-950/75 border border-white/10 shadow-2xl" id="login-card"><div class="text-center mb-6"><h2 class="text-3xl font-extrabold tracking-tight text-white mb-2">Login</h2><p class="text-xs sm:text-sm text-slate-400 leading-normal font-normal">Please enter your ID and password to authenticate</p></div><!-- General Alert Banner for Validation Failures -->
+<div class="hidden mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 backdrop-blur-md text-rose-300 text-xs font-mono flex items-center space-x-2 transition-all duration-300" id="form-error-banner">
+<span class="material-symbols-outlined text-rose-400 text-base shrink-0">error</span>
+<span class="font-medium text-[11px]" id="form-error-message">Authentication failed: Missing required credentials</span>
+</div>
+<form class="space-y-4" data-purpose="credential-form" id="login-form" novalidate="" onsubmit="event.preventDefault(); handleLogin();"><div class="space-y-1.5"><label class="block text-xs font-medium text-slate-300 sr-only" for="username">Username or ID</label><div class="cosmo-field flex items-center rounded-xl px-4 py-3.5" id="username-container"><span class="material-symbols-outlined text-slate-400 text-lg mr-3 select-none" id="username-icon">person</span><input class="bg-transparent border-0 p-0 text-sm text-white placeholder-slate-500 focus:ring-0 w-full focus:outline-none" id="username" oninput="clearError('username')" placeholder="Enter your Astronaut ID" type="text" value=""/></div><p class="hidden text-[11px] font-mono text-rose-400 flex items-center space-x-1 pl-1 pt-0.5" id="username-error"><span class="material-symbols-outlined text-xs">warning</span><span>Astronaut ID required to establish link</span></p></div><div class="space-y-1.5"><label class="block text-xs font-medium text-slate-300 sr-only" for="password">Password</label><div class="cosmo-field flex items-center rounded-xl px-4 py-3.5" id="password-container"><span class="material-symbols-outlined text-slate-400 text-lg mr-3 select-none" id="password-icon">lock</span><input class="bg-transparent border-0 p-0 text-sm text-white placeholder-slate-500 focus:ring-0 w-full focus:outline-none tracking-wider" id="password" oninput="clearError('password')" placeholder="Password" type="password" value=""/><button aria-label="Toggle password visibility" class="text-slate-400 hover:text-slate-200 transition-colors focus:outline-none flex items-center" onclick="togglePasswordVisibility()" type="button"><span class="material-symbols-outlined text-lg select-none" id="pwd-icon">visibility</span></button></div><p class="hidden text-[11px] font-mono text-rose-400 flex items-center space-x-1 pl-1 pt-0.5" id="password-error"><span class="material-symbols-outlined text-xs">warning</span><span>Security passkey required</span></p></div><div class="flex items-center justify-between text-xs text-slate-400 pt-1"><label class="flex items-center cursor-pointer hover:text-slate-300 transition-colors"><input checked="" class="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 focus:ring-offset-0 mr-2 w-4 h-4 cursor-pointer" type="checkbox"/><span>Save Biometrics</span></label><a class="hover:text-emerald-400 transition-colors text-slate-400" href="#forgot">Forgot Key?</a></div><div class="pt-2"><button class="btn-cosmo-glow w-full text-white font-bold py-3.5 px-6 rounded-xl tracking-wider text-xs sm:text-sm uppercase flex items-center justify-center space-x-2 cursor-pointer" id="login-button" type="submit"><span id="button-text">LOGIN NOW</span><svg class="hidden animate-spin h-5 w-5 text-white" fill="none" id="loading-spinner" viewbox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path></svg></button></div></form><div class="mt-6 pt-5 border-t border-slate-800/80 text-center"><span class="text-[11px] text-slate-400 flex items-center justify-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2 shadow-[0_0_8px_#22c55e]"></span>Encrypted Quantum Channel 256-bit</span></div></div></div></div></section>
+<!-- END: LoginView -->
+<!-- BEGIN: DashboardView (Transition Target upon Login) -->
+<section class="view-transition hidden opacity-0 translate-y-4 w-full rounded-3xl overflow-hidden portal-frame p-6 md:p-8" data-purpose="home-dashboard" id="dashboard-view"><!-- Top Navigation Dock -->
+<header class="flex flex-col md:flex-row md:items-center justify-between pb-5 border-b border-slate-800/80 gap-4">
+<div class="flex items-center space-x-3.5">
+<div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-sm">
+<span class="material-symbols-outlined text-2xl">rocket_launch</span>
+</div>
+<div>
+<div class="flex items-center space-x-2">
+<span class="font-extrabold tracking-wider text-white text-lg">COSMO</span>
+<span class="font-extrabold tracking-wider text-cyan-400 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)] text-lg">CARE</span>
+<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">STATION-01</span>
+</div>
+<p class="text-xs text-slate-400">Mission Command &amp; Bio-Telemetry Control Grid</p>
+</div>
+</div>
+<!-- Navigation Dock Links & Actions -->
+<nav class="flex items-center space-x-2 text-xs">
+<span class="px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center space-x-2">
+<span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+<span class="text-slate-300 font-mono">Orbital Link: Synchronized</span>
+</span>
+<button class="px-3.5 py-1.5 rounded-xl font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer flex items-center space-x-1" onclick="handleLogout()">
+<span class="material-symbols-outlined text-sm">logout</span>
+<span>Exit Gateway</span>
+</button>
+</nav>
+</header>
+<!-- Hero Section with Headline -->
+<div class="pt-5 pb-4 border-b border-slate-800/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider flex items-center space-x-1.5 mb-1">
+<span class="material-symbols-outlined text-sm">shield_with_heart</span>
+<span>Cosmo Care Mission Operations</span>
+</span>
+<h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Safeguarding human life beyond Earth</h1>
+<p class="text-xs text-slate-400 mt-1">Active crew diagnostics, microgravity therapy protocols, and orbital biomedical scheduling.</p>
+</div>
+<div class="flex items-center space-x-3 text-xs font-mono">
+<div class="px-3.5 py-2 rounded-xl bg-slate-950/70 border border-slate-800/80 text-right">
+<span class="text-slate-500 block text-[10px]">CREW COMPLEMENT</span>
+<span class="text-white font-bold text-sm">06 ASTRONAUTS</span>
+</div>
+<div class="px-3.5 py-2 rounded-xl bg-slate-950/70 border border-slate-800/80 text-right">
+<span class="text-slate-500 block text-[10px]">SYSTEM INTEGRITY</span>
+<span class="text-emerald-400 font-bold text-sm">99.98% NOMINAL</span>
+</div>
+</div>
+</div>
+<!-- Telemetry Quick Vitals Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-5">
+<article class="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition">
+<div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+<span>Astronaut 042 Vitals</span>
+<span class="text-emerald-400 font-semibold">• Online</span>
+</div>
+<div class="flex items-baseline space-x-2">
+<span class="text-2xl font-extrabold text-white font-mono">72</span>
+<span class="text-xs text-slate-400">BPM</span>
+</div>
+<div class="mt-2.5 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+<div class="bg-emerald-500 h-1.5 rounded-full" style="width: 72%"></div>
+</div>
+</article>
+<article class="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition">
+<div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+<span>Suit Barometric Pressure</span>
+<span class="text-cyan-400 font-semibold">Optimal</span>
+</div>
+<div class="flex items-baseline space-x-2">
+<span class="text-2xl font-extrabold text-white font-mono">29.6</span>
+<span class="text-xs text-slate-400">kPa</span>
+</div>
+<div class="mt-2.5 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+<div class="bg-cyan-500 h-1.5 rounded-full" style="width: 82%"></div>
+</div>
+</article>
+<article class="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition">
+<div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+<span>Radiation Dosimetry</span>
+<span class="text-emerald-400 font-semibold">Low</span>
+</div>
+<div class="flex items-baseline space-x-2">
+<span class="text-2xl font-extrabold text-white font-mono">0.12</span>
+<span class="text-xs text-slate-400">mSv/d</span>
+</div>
+<div class="mt-2.5 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+<div class="bg-amber-400 h-1.5 rounded-full" style="width: 28%"></div>
+</div>
+</article>
+<article class="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition">
+<div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+<span>EVA Atmospheric Reserve</span>
+<span class="text-emerald-400 font-semibold">Nominal</span>
+</div>
+<div class="flex items-baseline space-x-2">
+<span class="text-2xl font-extrabold text-white font-mono">08:14</span>
+<span class="text-xs text-slate-400">HRS</span>
+</div>
+<div class="mt-2.5 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+<div class="bg-indigo-500 h-1.5 rounded-full" style="width: 88%"></div>
+</div>
+</article>
+</div>
+<!-- Precision Space Medicine & Orbital Schedule Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 pt-1">
+<!-- Precision Space Medicine Module -->
+<div class="lg:col-span-2 p-5 rounded-2xl bg-slate-900/40 border border-slate-800 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-cyan-400 text-lg">medical_services</span>
+<h2 class="text-base font-semibold text-white">Precision Space Medicine Module</h2>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">TELE-HEALTH ACTIVE</span>
+</div>
+<p class="text-xs text-slate-400 mb-4">Adaptive physiological countermeasure management and deep-space neuro-vascular tracking for expedition crew members.</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
+<div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+<div class="flex items-center justify-between text-slate-400 mb-1">
+<span>Cardiovascular Strain</span>
+<span class="text-emerald-400">Minimal</span>
+</div>
+<p class="text-white font-semibold text-sm">VO2 Max: 52 ml/kg/min</p>
+<span class="text-[10px] text-slate-500 font-sans">Countermeasure treadmill cycle complete</span>
+</div>
+<div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+<div class="flex items-center justify-between text-slate-400 mb-1">
+<span>Bone Density Preservation</span>
+<span class="text-cyan-400">Optimal</span>
+</div>
+<p class="text-white font-semibold text-sm">T-Score: +0.4 (ARES Suit)</p>
+<span class="text-[10px] text-slate-500 font-sans">Resistive load simulation active</span>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-800/70 flex items-center justify-between">
+<span class="text-xs text-slate-400 flex items-center space-x-1.5">
+<span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+<span>Autonomous Medical Bio-Synthesizer: Ready</span>
+</span>
+<button class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition cursor-pointer flex items-center space-x-1">
+<span class="material-symbols-outlined text-sm">biomedical</span>
+<span>Execute Health Scan</span>
+</button>
+</div>
+</div>
+<!-- Orbital Schedule Calendar Widget -->
+<div class="p-5 rounded-2xl bg-slate-900/40 border border-slate-800 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-emerald-400 text-lg">calendar_month</span>
+<h2 class="text-base font-semibold text-white">Orbital Schedule</h2>
+</div>
+<span class="text-xs font-mono text-slate-400">SOL 248</span>
+</div>
+<!-- Calendar timeline list -->
+<div class="space-y-2.5 font-mono text-xs">
+<div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-white font-semibold font-sans text-xs">Bio-Sensor Calibrations</span>
+<span class="text-slate-400 text-[10px]">08:00 - 09:30 UTC</span>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-sans">COMPLETE</span>
+</div>
+<div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between border-l-2 border-l-cyan-400">
+<div class="flex flex-col">
+<span class="text-white font-semibold font-sans text-xs">Microgravity Ergometer</span>
+<span class="text-cyan-400 text-[10px]">11:00 - 12:30 UTC (NOW)</span>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-sans animate-pulse">ACTIVE</span>
+</div>
+<div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-white font-semibold font-sans text-xs">EVA Airlock Preparation</span>
+<span class="text-slate-400 text-[10px]">15:00 - 18:00 UTC</span>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 font-sans">UPCOMING</span>
+</div>
+</div>
+</div>
+<div class="pt-3 mt-3 border-t border-slate-800/60 text-center">
+<button class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition cursor-pointer flex items-center justify-center space-x-1" onclick="handleLogout()">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+<span>Return to Login Gate</span>
+</button>
+</div>
+</div>
+</div></section>
+<!-- END: DashboardView -->
+</main>
+<!-- END: ApplicationRoot -->
+<!-- BEGIN: InteractiveScripts -->
+<script data-purpose="auth-and-transitions">
+    /**
+     * Password show/hide toggle
+     */
+    function togglePasswordVisibility() {
+      const pwdInput = document.getElementById('password');
+      const pwdIcon = document.getElementById('pwd-icon');
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        pwdIcon.textContent = 'visibility_off';
+      } else {
+        pwdInput.type = 'password';
+        pwdIcon.textContent = 'visibility';
+      }
+    }
+
+    /**
+     * Clears error highlight and message when user types into field
+     */
+    function clearError(fieldId) {
+      const container = document.getElementById(fieldId + '-container');
+      const errorMsg = document.getElementById(fieldId + '-error');
+      const icon = document.getElementById(fieldId + '-icon');
+      const banner = document.getElementById('form-error-banner');
+
+      if (container) {
+        container.classList.remove('cosmo-field-error');
+      }
+      if (errorMsg) {
+        errorMsg.classList.add('hidden');
+      }
+      if (icon) {
+        icon.classList.remove('text-rose-400');
+        icon.classList.add('text-slate-400');
+      }
+
+      // If both fields are valid/non-empty now or being edited, dismiss banner if neither is in error state
+      const userEmpty = !document.getElementById('username').value.trim();
+      const pwdEmpty = !document.getElementById('password').value.trim();
+      if (!userEmpty && !pwdEmpty && banner) {
+        banner.classList.add('hidden');
+      }
+    }
+
+    /**
+     * Handles simulated authentication flow, validation, and smooth screen switch
+     */
+    function handleLogin() {
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const userContainer = document.getElementById('username-container');
+      const pwdContainer = document.getElementById('password-container');
+      const userError = document.getElementById('username-error');
+      const pwdError = document.getElementById('password-error');
+      const userIcon = document.getElementById('username-icon');
+      const pwdIcon = document.getElementById('password-icon');
+      const banner = document.getElementById('form-error-banner');
+      const bannerMsg = document.getElementById('form-error-message');
+      const card = document.getElementById('login-card');
+
+      const isUserEmpty = !usernameInput.value.trim();
+      const isPwdEmpty = !passwordInput.value.trim();
+
+      // VALIDATION FAILURE: Check for empty credentials
+      if (isUserEmpty || isPwdEmpty) {
+        // Trigger subtle shake animation on login card
+        card.classList.remove('shake-animate');
+        void card.offsetWidth; // Force reflow
+        card.classList.add('shake-animate');
+
+        // Apply error styles to username if empty
+        if (isUserEmpty) {
+          userContainer.classList.add('cosmo-field-error');
+          userError.classList.remove('hidden');
+          userIcon.classList.remove('text-slate-400');
+          userIcon.classList.add('text-rose-400');
+        } else {
+          userContainer.classList.remove('cosmo-field-error');
+          userError.classList.add('hidden');
+          userIcon.classList.remove('text-rose-400');
+          userIcon.classList.add('text-slate-400');
+        }
+
+        // Apply error styles to password if empty
+        if (isPwdEmpty) {
+          pwdContainer.classList.add('cosmo-field-error');
+          pwdError.classList.remove('hidden');
+          pwdIcon.classList.remove('text-slate-400');
+          pwdIcon.classList.add('text-rose-400');
+        } else {
+          pwdContainer.classList.remove('cosmo-field-error');
+          pwdError.classList.add('hidden');
+          pwdIcon.classList.remove('text-rose-400');
+          pwdIcon.classList.add('text-slate-400');
+        }
+
+        // Set sci-fi alert banner text
+        if (isUserEmpty && isPwdEmpty) {
+          bannerMsg.textContent = 'Authentication failed: Missing Astronaut ID and passkey';
+        } else if (isUserEmpty) {
+          bannerMsg.textContent = 'Authentication failed: Missing Astronaut ID';
+        } else {
+          bannerMsg.textContent = 'Authentication failed: Security passkey required';
+        }
+        banner.classList.remove('hidden');
+
+        // Focus first invalid element
+        if (isUserEmpty) {
+          usernameInput.focus();
+        } else {
+          passwordInput.focus();
+        }
+        return; // Prevent progression
+      }
+
+      // VALIDATION SUCCESS: Clear any remaining error artifacts
+      banner.classList.add('hidden');
+      userContainer.classList.remove('cosmo-field-error');
+      pwdContainer.classList.remove('cosmo-field-error');
+      userError.classList.add('hidden');
+      pwdError.classList.add('hidden');
+
+      const loginBtn = document.getElementById('login-button');
+      const btnText = document.getElementById('button-text');
+      const spinner = document.getElementById('loading-spinner');
+      const loginView = document.getElementById('login-view');
+      const dashboardView = document.getElementById('dashboard-view');
+
+      // Visual loading state
+      btnText.textContent = "AUTHENTICATING...";
+      spinner.classList.remove('hidden');
+      loginBtn.disabled = true;
+
+      // Simulate authentication check delay
+      setTimeout(() => {
+        // Fade out login card smoothly
+        loginView.classList.add('opacity-0', '-translate-y-4');
+        
+        setTimeout(() => {
+          loginView.classList.add('hidden');
+          dashboardView.classList.remove('hidden');
+
+          // Trigger transition in for dashboard
+          requestAnimationFrame(() => {
+            dashboardView.classList.remove('opacity-0', 'translate-y-4');
+          });
+
+          // Reset login button state for future use
+          btnText.textContent = "LOGIN NOW";
+          spinner.classList.add('hidden');
+          loginBtn.disabled = false;
+        }, 400);
+
+      }, 700);
+    }
+
+    /**
+     * Returns back to login screen smoothly
+     */
+    function handleLogout() {
+      const loginView = document.getElementById('login-view');
+      const dashboardView = document.getElementById('dashboard-view');
+
+      dashboardView.classList.add('opacity-0', 'translate-y-4');
+      
+      setTimeout(() => {
+        dashboardView.classList.add('hidden');
+        loginView.classList.remove('hidden');
+
+        requestAnimationFrame(() => {
+          loginView.classList.remove('opacity-0', '-translate-y-4');
+        });
+      }, 400);
+    }
+  </script>
+<!-- END: InteractiveScripts -->
+</body></html>
