@@ -1,0 +1,856 @@
+<!DOCTYPE html><html lang="en" class="h-full"><head></head><body class="h-screen w-screen bg-[#020611] text-slate-100 flex flex-col justify-between overflow-hidden relative"><svg class="inline-defs-container" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"></svg>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cosmo Care - Security &amp; Alerts</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&amp;family=Rajdhani:wght@500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+    .font-orbitron { font-family: 'Orbitron', monospace, sans-serif; }
+    .font-rajdhani { font-family: 'Rajdhani', monospace, sans-serif; }
+    
+    .glass-panel {
+      background: rgba(8, 16, 32, 0.68);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 240, 255, 0.16);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.55), inset 0 0 12px rgba(0, 240, 255, 0.04);
+    }
+    
+    .glass-panel-subtle {
+      background: rgba(10, 20, 38, 0.55);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 240, 255, 0.12);
+    }
+
+    .nav-pill-active {
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid rgba(0, 240, 255, 0.7);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.35), inset 0 0 8px rgba(0, 240, 255, 0.2);
+    }
+    
+    .nav-pill-inactive {
+      background: rgba(13, 24, 46, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+    }
+    .nav-pill-inactive:hover {
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.3);
+      color: #38bdf8;
+    }
+
+    @keyframes pulse-cyan {
+      0%, 100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 4px #00f0ff); }
+      50% { opacity: 0.5; transform: scale(0.9); filter: drop-shadow(0 0 1px #00f0ff); }
+    }
+    .cyan-pulse { animation: pulse-cyan 2.4s infinite ease-in-out; }
+
+    @keyframes pulse-amber {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.8)); }
+      50% { opacity: 0.4; filter: drop-shadow(0 0 1px rgba(245, 158, 11, 0.2)); }
+    }
+    .amber-pulse { animation: pulse-amber 1.8s infinite ease-in-out; }
+
+    @keyframes pulse-crimson {
+      0%, 100% { border-color: rgba(239, 68, 68, 0.8); box-shadow: 0 0 18px rgba(239, 68, 68, 0.4); }
+      50% { border-color: rgba(239, 68, 68, 0.3); box-shadow: 0 0 6px rgba(239, 68, 68, 0.15); }
+    }
+    .crimson-pulse-border { animation: pulse-crimson 2s infinite ease-in-out; }
+
+    /* Custom thin scrollbars for table logs if needed */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.25); border-radius: 2px; }
+  </style>
+
+
+
+  <!-- Deep Space Nebula Background (Same asset as Devices & Habitat / Stats) -->
+  <div class="absolute inset-0 z-0 bg-cover bg-center pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDrfVNSinjSO_u3_rcAI6WljrelqWL6X_YUASgP5-k1LpK9ihucMgte6yLv9HwT4E4OoR2QaxbncuHDBFtR8ScBrUHa0a33rUptOxw2sisCFPAHroojguk0HlW61a9SNZIPoOEaI_zq50ux-ZN2cDPSoorMkskZj4vVbomvwLU302NfkvKEtrCN1kpxGaFtbdIBBE7QdtDnxokngrwplPkOi6n91fanvVhIRYrpzvk6cKsrxRScogrYmw'); opacity: 0.88;"></div>
+  
+  <!-- Subtle dark vignette and contrast protection overlay -->
+  <div class="absolute inset-0 z-0 bg-gradient-to-b from-[#020611]/85 via-[#030917]/70 to-[#020611]/90 pointer-events-none"></div>
+  <div class="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(2,6,17,0.7)_100%)] pointer-events-none"></div>
+
+  <!-- HUD Crosshairs / Grid Watermarks -->
+  <div class="absolute inset-0 pointer-events-none z-0 opacity-15" style="background-image: linear-gradient(rgba(0, 240, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px); background-size: 60px 60px;"></div>
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="relative z-20 w-full px-6 py-2.5 flex items-center justify-between glass-panel-subtle border-b border-cyan-500/20 backdrop-blur-md shrink-0">    <!-- Top-Left: Cosmo Care Logo with Medical Cross & Tagline -->
+    <a href="{{DATA:SCREEN:SCREEN_12}}" class="flex items-center gap-3 cursor-pointer group">
+      <div class="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-400/60 flex items-center justify-center shadow-[0_0_12px_rgba(0,240,255,0.4)] group-hover:bg-cyan-500/25 transition-all">
+        <svg class="w-5 h-5 text-cyan-400 drop-shadow-[0_0_6px_#00f0ff]" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M19 10.5h-5.5V5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v5.5H5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.5V19c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5.5H19c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="font-orbitron font-black text-lg tracking-[0.22em] text-white flex items-center gap-1.5 leading-none">
+          COSMO <span class="text-cyan-400 drop-shadow-[0_0_8px_rgba(0,240,255,0.7)]">CARE</span>
+        </div>
+        <div class="text-[9px] font-rajdhani font-semibold tracking-[0.28em] text-cyan-300/80 mt-0.5 uppercase">Healthcare Beyond Earth</div>
+      </div>
+    </a>
+
+    <!-- Top-Center: Expanding 5-Dock Navigation Pills -->
+    <nav class="flex items-center gap-1.5 bg-[#061124]/70 p-1 rounded-full border border-cyan-500/25 shadow-[0_0_20px_rgba(0,0,0,0.6)]">
+      <!-- 01 HOME -->
+      <a href="{{DATA:SCREEN:SCREEN_12}}" class="nav-pill-inactive px-3.5 py-1 rounded-full font-orbitron text-[11px] font-semibold tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"><span class="text-[9px] text-slate-500">01</span> HOME</a>
+      <!-- 02 DEVICES & HABITAT -->
+      <a href="{{DATA:SCREEN:SCREEN_7}}" class="nav-pill-inactive px-3.5 py-1 rounded-full font-orbitron text-[11px] font-semibold tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"><span class="text-[9px] text-slate-500">02</span> DEVICES &amp; HABITAT</a>
+      <!-- 03 STATISTICS & TRIAGE -->
+      <a href="{{DATA:SCREEN:SCREEN_10}}" class="nav-pill-inactive px-3.5 py-1 rounded-full font-orbitron text-[11px] font-semibold tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"><span class="text-[9px] text-slate-500">03</span> STATISTICS &amp; TRIAGE</a>
+      <!-- 04 SECURITY & ALERTS (ACTIVE) -->
+      <a href="{{DATA:SCREEN:SCREEN_5}}" class="nav-pill-active px-4 py-1 rounded-full font-orbitron text-[11px] font-bold tracking-wider text-cyan-300 transition-all flex items-center gap-1.5 cursor-pointer"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 cyan-pulse"></span><span class="text-[9px] text-cyan-400">04</span> SECURITY &amp; ALERTS</a>
+      <!-- 05 SLEEP & RATIONS -->
+      <a href="{{DATA:SCREEN:SCREEN_3}}" class="nav-pill-inactive px-3.5 py-1 rounded-full font-orbitron text-[11px] font-semibold tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"><span class="text-[9px] text-slate-500">05</span> SLEEP &amp; RATIONS</a>
+    </nav>
+
+    <!-- Top-Right: Notification Bell, DEFCON, Light Delay & Profile Button -->
+    <div class="flex items-center gap-3 relative">
+      <!-- Notification Bell with Dropdown Drawer -->
+      <div class="relative">
+  <!-- Notification Bell Button -->
+  <button id="notif-btn" aria-label="Notifications" class="relative w-8 h-8 rounded-full bg-cyan-950/50 border border-cyan-400/40 flex items-center justify-center text-cyan-300 hover:text-white hover:border-cyan-300 hover:bg-cyan-500/20 transition-all cursor-pointer shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+    </svg>
+    <!-- Notification Badge Counter -->
+    <span id="notif-badge" class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] border border-slate-900/60 animate-pulse"></span>
+  </button>
+
+  <!-- Interactive Dark Glassmorphic Notification Drawer -->
+  <div id="notif-drawer" class="hidden absolute right-0 top-11 w-80 rounded-2xl border border-cyan-500/30 glass-panel shadow-[0_16px_40px_rgba(0,0,0,0.85)] z-50 p-4 text-left animate-page-enter backdrop-blur-md">
+    <div class="flex items-center justify-between pb-2 border-b border-cyan-500/20">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span class="font-orbitron text-xs font-bold text-white tracking-wider">ACTIVE HAZARDS &amp; COMMS</span>
+      </div>
+      <button id="mark-all-read-btn" class="text-[9px] font-orbitron font-semibold text-cyan-400 hover:text-cyan-200 uppercase transition-colors cursor-pointer">Mark all read</button>
+    </div>
+
+    <!-- Alert Items List -->
+    <div id="notif-items-list" class="space-y-2 my-2.5 text-xs font-rajdhani">
+      <a href="{{DATA:SCREEN:SCREEN_5}}" class="notif-item block p-2.5 rounded-lg bg-amber-950/30 border border-amber-500/30 hover:border-amber-400/60 transition-colors group cursor-pointer">
+        <div class="flex justify-between items-center text-[10px] font-orbitron text-amber-300 mb-1">
+          <span class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+            SOLAR FLARE ADVISORY
+          </span>
+          <span class="text-[9px] text-slate-400 font-rajdhani">08:42 UTC</span>
+        </div>
+        <p class="text-[11px] text-slate-200 leading-snug">Radiation flux elevation (+0.12 mSv/h). Shield coils tuned; dosage safe.</p>
+        <div class="mt-1 text-[8.5px] font-orbitron text-amber-400/80 uppercase">Source: Security &amp; Alerts</div>
+      </a>
+
+      <a href="{{DATA:SCREEN:SCREEN_10}}" class="notif-item block p-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/30 hover:border-cyan-400/60 transition-colors group cursor-pointer">
+        <div class="flex justify-between items-center text-[10px] font-orbitron text-cyan-300 mb-1">
+          <span class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            HEMODYNAMIC STABILIZATION
+          </span>
+          <span class="text-[9px] text-slate-400 font-rajdhani">07:15 UTC</span>
+        </div>
+        <p class="text-[11px] text-slate-200 leading-snug">Crew biometric sync completed. CO₂ scrubber restored to nominal levels.</p>
+        <div class="mt-1 text-[8.5px] font-orbitron text-cyan-400/80 uppercase">Source: Statistics &amp; Triage</div>
+      </a>
+
+      <a href="{{DATA:SCREEN:SCREEN_7}}" class="notif-item block p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 hover:border-cyan-400/40 transition-colors group cursor-pointer">
+        <div class="flex justify-between items-center text-[10px] font-orbitron text-slate-300 mb-1">
+          <span class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            AIRLOCK PERIMETER STATUS
+          </span>
+          <span class="text-[9px] text-slate-400 font-rajdhani">02:00 UTC</span>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-snug">Autonomous micro-meteoroid sonic sweep complete; zero breach detected.</p>
+        <div class="mt-1 text-[8.5px] font-orbitron text-slate-400 uppercase">Source: Devices &amp; Habitat</div>
+      </a>
+    </div>
+
+    <div class="pt-2 border-t border-cyan-500/15 flex items-center justify-between text-[9px] font-rajdhani text-slate-400">
+      <span class="text-cyan-400 flex items-center gap-1">
+        <span class="w-1 h-1 rounded-full bg-cyan-400"></span> DSN LINK LOCKED
+      </span>
+      <a href="{{DATA:SCREEN:SCREEN_3}}" class="text-cyan-300 hover:text-white hover:underline font-semibold font-orbitron text-[8.5px]">VIEW RATIONS &amp; SLEEP →</a>
+    </div>
+  </div>
+</div>
+
+      <!-- DEFCON: NOMINAL pill -->
+      <div class="flex items-center gap-2 px-3 py-1 rounded-md bg-emerald-950/40 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+        <span id="defcon-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <div class="font-orbitron text-[10px] font-bold tracking-wider text-emerald-400">
+          DEFCON: <span id="defcon-status-text" class="text-white">NOMINAL</span>
+        </div>
+      </div>
+
+      <!-- Earth Link Delay -->
+      <div class="text-right pl-2 border-l border-cyan-500/20">
+        <div class="text-[9px] font-rajdhani font-semibold tracking-widest text-slate-400 uppercase">EARTH LINK (RF SYNC)</div>
+        <div class="font-orbitron text-xs font-bold text-cyan-300 tracking-wider flex items-center justify-end gap-1">
+          </div></div></div></header>
+
+  <!-- ================= MAIN VIEWPORT (STRICT 100vh NON-SCROLLING) ================= -->
+  <main class="relative z-10 flex-1 px-6 flex flex-col gap-3 min-h-0 animate-page-enter pb-20 pt-2" style="overflow: hidden auto;">
+    
+    <!-- TOP ROW: 4 HAZARD & PERIMETER KPI CARDS (4-Column Grid) -->
+    <section class="grid grid-cols-4 gap-3.5 shrink-0">
+      
+      <!-- Card 1: Radiation Flux -->
+      <div class="glass-panel rounded-xl p-3 relative overflow-hidden flex flex-col justify-between border-cyan-500/30 hover:border-cyan-400/50 transition-all">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-rajdhani font-semibold tracking-wider">
+          <span class="flex items-center gap-1.5 text-cyan-300">
+            <!-- Solar flare icon -->
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="4" stroke-width="2"></circle>
+              <path stroke-width="2" stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            COSMIC RADIATION FLUX
+          </span>
+          <span class="px-2 py-0.5 rounded text-[9px] font-orbitron font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+            NOMINAL
+          </span>
+        </div>
+        <div class="my-1 flex items-baseline justify-between">
+          <div class="font-orbitron text-2xl font-black tracking-tight text-white flex items-baseline gap-1">
+            0.42 <span class="text-xs font-rajdhani text-cyan-400 font-semibold tracking-normal">mSv/day</span>
+          </div>
+          <div class="text-[10px] font-rajdhani text-slate-400">
+            PEAK: <span class="text-slate-300">0.58 mSv</span>
+          </div>
+        </div>
+        <!-- Micro bar gauge -->
+        <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden flex">
+          <div class="bg-gradient-to-r from-emerald-500 via-cyan-400 to-amber-500 h-full rounded-full" style="width: 28%;"></div>
+        </div>
+        <div class="flex justify-between items-center text-[9px] font-rajdhani text-slate-500 mt-1">
+          <span>SAFE THRESHOLD: &lt; 1.50 mSv/day</span>
+          <span class="text-cyan-400">RAD-BIO SENSORS: 8/8 ON</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Hull & Airlock Perimeter -->
+      <div class="glass-panel rounded-xl p-3 relative overflow-hidden flex flex-col justify-between border-cyan-500/30 hover:border-cyan-400/50 transition-all">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-rajdhani font-semibold tracking-wider">
+          <span class="flex items-center gap-1.5 text-cyan-300">
+            <!-- Hull Shielding Icon -->
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+            </svg>
+            HULL &amp; AIRLOCK PERIMETER
+          </span>
+          <span class="px-2 py-0.5 rounded text-[9px] font-orbitron font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
+            SECURE
+          </span>
+        </div>
+        <div class="my-1 flex items-baseline justify-between">
+          <div class="font-orbitron text-2xl font-black tracking-tight text-white">
+            ALL SEALED
+          </div>
+          <div class="text-[10px] font-rajdhani text-emerald-400 font-semibold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span> 6 HATCHES
+          </div>
+        </div>
+        <!-- Status indicator bar -->
+        <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+          <div class="bg-cyan-400 h-full rounded-full" style="width: 100%;"></div>
+        </div>
+        <div class="flex justify-between items-center text-[9px] font-rajdhani text-slate-400 mt-1">
+          <span class="font-semibold text-slate-300">CABIN: 101.3 kPa</span>
+          <span class="text-emerald-400 font-bold">ZERO BREACH</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Cabin Atmosphere Alert -->
+      <div class="glass-panel rounded-xl p-3 relative overflow-hidden flex flex-col justify-between border-cyan-500/30 hover:border-cyan-400/50 transition-all">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-rajdhani font-semibold tracking-wider">
+          <span class="flex items-center gap-1.5 text-cyan-300">
+            <!-- Wind/Atmosphere Icon -->
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
+            CABIN ATMOSPHERE (CO₂)
+          </span>
+          <span class="px-2 py-0.5 rounded text-[9px] font-orbitron font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+            OPTIMAL
+          </span>
+        </div>
+        <div class="my-1 flex items-baseline justify-between">
+          <div class="font-orbitron text-2xl font-black tracking-tight text-white flex items-baseline gap-1">
+            987 <span class="text-xs font-rajdhani text-cyan-400 font-semibold tracking-normal">ppm</span>
+          </div>
+          <div class="text-[10px] font-rajdhani text-slate-400">
+            O₂ RATIO: <span class="text-cyan-300">20.8%</span>
+          </div>
+        </div>
+        <!-- Bar gauge -->
+        <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+          <div class="bg-gradient-to-r from-emerald-400 to-cyan-400 h-full rounded-full" style="width: 33%;"></div>
+        </div>
+        <div class="flex justify-between items-center text-[9px] font-rajdhani text-slate-400 mt-1">
+          <span class="text-emerald-400 font-semibold">SAFE (&lt; 3,000 ppm)</span>
+          <span class="text-slate-500">AUTO-SCRUBBERS ACTIVE</span>
+        </div>
+      </div>
+
+      <!-- Card 4: Active Crew Alerts -->
+      <div class="glass-panel rounded-xl p-3 relative overflow-hidden flex flex-col justify-between border-amber-500/30 hover:border-amber-400/60 transition-all">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-rajdhani font-semibold tracking-wider">
+          <span class="flex items-center gap-1.5 text-amber-300">
+            <!-- Alert Bell / Warning Icon -->
+            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+            </svg>
+            ACTIVE CREW HAZARD ALERTS
+          </span>
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 amber-pulse"></span>
+        </div>
+        <div class="my-1 flex items-baseline justify-between">
+          <div class="font-orbitron text-xl font-black tracking-tight text-white flex items-center gap-1.5">
+            <span class="text-emerald-400">0</span> <span class="text-xs font-rajdhani text-slate-400 font-semibold">CRIT</span>
+            <span class="text-slate-600">/</span>
+            <span class="text-amber-400">1</span> <span class="text-xs font-rajdhani text-amber-300 font-semibold">ADVISORY</span>
+          </div>
+          <div class="text-[10px] font-orbitron font-semibold text-amber-300/90 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
+            SOLAR WATCH
+          </div>
+        </div>
+        <!-- Bar gauge with amber warning state -->
+        <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+          <div class="bg-amber-400 h-full rounded-full" style="width: 15%;"></div>
+        </div>
+        <div class="flex justify-between items-center text-[9px] font-rajdhani text-slate-400 mt-1">
+          <span class="text-amber-400">EXP-73 HEALTH HUB SYNCED</span>
+          <span class="text-slate-500">TRIAGE REQ: NONE</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= MAIN CONTENT SPLIT (60% Left, 40% Right) ================= -->
+    <div class="flex-1 grid grid-cols-12 gap-3.5 min-h-0" style="min-height: min-content;">
+      
+      <!-- LEFT COLUMN: LIVE ALERT & TRANSMISSION LOGS (60% -> col-span-7) -->
+      <section class="col-span-7 flex flex-col gap-3 min-h-0">
+        
+        <!-- Top Panel: Crew & Habitat Danger Alerts (CREW_DANGER_ALERTS) -->
+        <div class="glass-panel rounded-xl p-3.5 flex flex-col flex-1 min-h-0 border-cyan-500/30">
+          <div class="flex items-center justify-between pb-2 mb-2 border-b border-cyan-500/20 shrink-0">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full bg-cyan-400 cyan-pulse"></div>
+              <h2 class="font-orbitron text-xs font-bold tracking-wider text-cyan-300 uppercase">
+                Crew &amp; Habitat Danger Alerts <span class="text-[10px] font-rajdhani text-slate-400 font-normal">[CREW_DANGER_ALERTS]</span>
+              </h2>
+            </div>
+            <div class="flex items-center gap-2 text-[10px] font-rajdhani font-semibold text-slate-400">
+              <span class="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-300">AUTO-TRIAGE ACTIVE</span>
+              <span class="text-slate-500">LOG REFRESH: LIVE</span>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="flex-1 overflow-hidden flex flex-col justify-between"><table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="text-[10px] font-orbitron uppercase tracking-wider text-cyan-400/80 border-b border-cyan-500/20 pb-1">
+                  <th class="py-1.5 px-3 font-semibold">TIMESTAMP</th>
+                  <th class="py-1.5 px-3 font-semibold">CATEGORY</th>
+                  <th class="py-1.5 px-3 font-semibold">SEVERITY</th>
+                  <th class="py-1.5 px-3 font-semibold">INCIDENT DETAILS &amp; TELEMETRY RESPONSE</th>
+                </tr>
+              </thead>
+              <tbody class="text-xs font-rajdhani divide-y divide-slate-800/40">
+                <tr class="hover:bg-cyan-500/5 transition-colors">
+                  <td class="py-2 px-3 font-orbitron text-[10.5px] text-cyan-400 font-semibold whitespace-nowrap">08:42:19 UTC</td>
+                  <td class="py-2 px-3 text-slate-300 font-semibold whitespace-nowrap text-xs"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Radiation</span></td>
+                  <td class="py-2 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[9.5px] font-orbitron font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">WARNING</span></td>
+                  <td class="py-2 px-3 text-slate-200 text-xs leading-snug">Minor solar flux elevation (+0.12 mSv/h) detected by dorsal sensor. Shielding coils auto-tuned; crew dosage safe.</td>
+                </tr>
+                <tr class="hover:bg-cyan-500/5 transition-colors">
+                  <td class="py-2 px-3 font-orbitron text-[10.5px] text-cyan-400 font-semibold whitespace-nowrap">07:15:04 UTC</td>
+                  <td class="py-2 px-3 text-slate-300 font-semibold whitespace-nowrap text-xs"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Cabin Life</span></td>
+                  <td class="py-2 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[9.5px] font-orbitron font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">RESOLVED</span></td>
+                  <td class="py-2 px-3 text-slate-300 text-xs leading-snug">Transient CO₂ rise in Galley during ration prep. Scrubber loop B boosted; level restored to 987 ppm.</td>
+                </tr>
+                <tr class="hover:bg-cyan-500/5 transition-colors">
+                  <td class="py-2 px-3 font-orbitron text-[10.5px] text-cyan-400 font-semibold whitespace-nowrap">05:30:12 UTC</td>
+                  <td class="py-2 px-3 text-slate-300 font-semibold whitespace-nowrap text-xs"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Medical Hub</span></td>
+                  <td class="py-2 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[9.5px] font-orbitron font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">RESOLVED</span></td>
+                  <td class="py-2 px-3 text-slate-300 text-xs leading-snug">Crew A004 biometric hub electrode impedance spike during sleep cycle. Re-calibrated autonomously.</td>
+                </tr>
+                <tr class="hover:bg-cyan-500/5 transition-colors">
+                  <td class="py-2 px-3 font-orbitron text-[10.5px] text-slate-400 font-semibold whitespace-nowrap">02:00:00 UTC</td>
+                  <td class="py-2 px-3 text-slate-300 font-semibold whitespace-nowrap text-xs"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Hull Pressure</span></td>
+                  <td class="py-2 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[9.5px] font-orbitron font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">SYSTEM TEST</span></td>
+                  <td class="py-2 px-3 text-slate-400 text-xs leading-snug">Autonomous hull micro-meteoroid sonic sweep complete. Zero integrity variations across 6 pressurized modules.</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="pt-2 mt-1 border-t border-cyan-500/10 flex items-center justify-between text-[10px] font-rajdhani text-slate-400">
+              <span class="text-cyan-400 font-semibold">TOTAL LOGGED EVENTS (24H): 18</span>
+              <span class="text-slate-500 uppercase tracking-wider font-orbitron text-[9px]">FILTER: ALL HAZARDS • SORT: NEWEST FIRST</span>
+            </div></div>
+        </div>
+
+        <!-- Bottom Panel: Earth Mission Control Transmissions (REORDER_TRANSMISSIONS) -->
+        <div class="glass-panel rounded-xl p-3.5 flex flex-col flex-1 min-h-0 border-cyan-500/30">
+          <div class="flex items-center justify-between pb-2 mb-2 border-b border-cyan-500/20 shrink-0">
+            <div class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+              </svg>
+              <h2 class="font-orbitron text-xs font-bold tracking-wider text-cyan-300 uppercase">
+                Earth Mission Control Transmissions <span class="text-[10px] font-rajdhani text-slate-400 font-normal">[REORDER_TRANSMISSIONS]</span>
+              </h2>
+            </div>
+            <div class="font-orbitron text-[10px] text-cyan-400 flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+              ANTENNA DSN-MARS // LOCKED
+            </div>
+          </div>
+
+          <!-- Transmission Table -->
+          <div class="flex-1 overflow-hidden flex flex-col justify-between"><table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="text-[10px] font-orbitron uppercase tracking-wider text-cyan-400/80 border-b border-cyan-500/20 pb-1">
+                  <th class="py-1.5 px-3 font-semibold">TX ID</th>
+                  <th class="py-1.5 px-3 font-semibold">PACKET TYPE</th>
+                  <th class="py-1.5 px-3 font-semibold">PAYLOAD DESCRIPTION</th>
+                  <th class="py-1.5 px-3 font-semibold">LIGHT DELAY</th>
+                  <th class="py-1.5 px-3 font-semibold text-right">STATUS</th>
+                </tr>
+              </thead>
+              <tbody class="text-xs font-rajdhani divide-y divide-slate-800/40">
+                <tr class="hover:bg-cyan-500/5 transition-colors">
+                  <td class="py-2 px-3 font-orbitron text-[10.5px] text-cyan-400 font-semibold whitespace-nowrap">#TX-9482</td>
+                  <td class="py-2 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[9.5px] font-orbitron font-semibold bg-cyan-950/60 border border-cyan-500/30 text-cyan-300">Telemetry Sync</span></td>
+                  <td class="py-2 px-3 text-slate-200 text-xs leading-snug">24h Crew Biometric ECG Streams &amp; Habitat Atmosphere Matrix</td>
+                  <td class="py-2 px-3 font-orbitron text-[10.5px] text-slate-300 whitespace-nowrap">12.5 min</td>
+                  <td class="py-2 px-3 text-right whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[9.5px] font-orbitron font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">TRANSMITTED</span></td>
+                </tr>
+                <tr class="hover:bg-cyan-500/5 transition-colors">
+                  <td class="py-2 px-3 font-orbitron text-[10.5px] text-cyan-400 font-semibold whitespace-nowrap">#TX-9481</td>
+                  <td class="py-2 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[9.5px] font-orbitron font-semibold bg-indigo-950/60 border border-indigo-500/40 text-indigo-300">Supply Reorder</span></td>
+                  <td class="py-2 px-3 text-slate-200 text-xs leading-snug">Catalytic WR5 Water Filters &amp; Lyophilized IV Electrolytes Req.</td>
+                  <td class="py-2 px-3 font-orbitron text-[10.5px] text-slate-300 whitespace-nowrap">12.5 min</td>
+                  <td class="py-2 px-3 text-right whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[9.5px] font-orbitron font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">TRANSMITTED</span></td>
+                </tr>
+                <tr class="hover:bg-cyan-500/5 transition-colors">
+                  <td class="py-2 px-3 font-orbitron text-[10.5px] text-cyan-400 font-semibold whitespace-nowrap">#TX-9480</td>
+                  <td class="py-2 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[9.5px] font-orbitron font-semibold bg-amber-950/60 border border-amber-500/40 text-amber-300">Solar Advisory</span></td>
+                  <td class="py-2 px-3 text-slate-200 text-xs leading-snug">Solar Corona CME observation report logged by Martian Orbit Array</td>
+                  <td class="py-2 px-3 font-orbitron text-[10.5px] text-slate-300 whitespace-nowrap">12.5 min</td>
+                  <td class="py-2 px-3 text-right whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[9.5px] font-orbitron font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">QUEUED</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="pt-2 mt-1 border-t border-cyan-500/10 flex items-center justify-between text-[10px] font-rajdhani text-slate-400 pl-20">
+              <span class="text-cyan-400">DEEP SPACE NETWORK: 70M GOLDSTONE DISH SYNC</span>
+              <span class="text-emerald-400 font-semibold">PACKET LOSS: 0.000% (QUANTUM PARITY OK)</span>
+            </div></div>
+        </div>
+
+      </section>
+
+      <!-- RIGHT COLUMN: RADIATION SHIELDING & EMERGENCY CONTROLS (40% -> col-span-5) -->
+      <section class="col-span-5 flex flex-col gap-3 min-h-0">
+        
+        <!-- Top Panel: Radiation & Shielding Monitor with Circular Gauge & Sparkline -->
+        <div class="glass-panel rounded-xl p-3.5 flex flex-col justify-between flex-1 min-h-0 border-cyan-500/30">
+          <div class="flex items-center justify-between pb-1.5 border-b border-cyan-500/20 shrink-0">
+            <div class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"></path>
+              </svg>
+              <h2 class="font-orbitron text-xs font-bold tracking-wider text-cyan-300 uppercase">
+                Radiation &amp; Shielding Monitor
+              </h2>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[9px] font-orbitron font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+              ACTIVE FIELD
+            </span>
+          </div>
+
+          <!-- Circular Radial Shielding Gauge & Metrics -->
+          <div class="py-1 flex items-center justify-around">
+            <!-- Semi-circular SVG Gauge -->
+            <div class="relative w-32 h-32 flex items-center justify-center">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                <!-- Background track -->
+                <circle cx="60" cy="60" r="50" stroke="rgba(255, 255, 255, 0.08)" stroke-width="9" fill="transparent" stroke-dasharray="314" stroke-dashoffset="0"></circle>
+                <!-- Luminous active stroke (99.4%) -->
+                <circle cx="60" cy="60" r="50" stroke="url(#cyanGlowGrad)" stroke-width="9" fill="transparent" stroke-dasharray="314" stroke-dashoffset="2" stroke-linecap="round" class="drop-shadow-[0_0_8px_rgba(0,240,255,0.7)]"></circle>
+                <defs>
+                  <linearGradient id="cyanGlowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00f0ff"></stop>
+                    <stop offset="70%" stop-color="#38bdf8"></stop>
+                    <stop offset="100%" stop-color="#10b981"></stop>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <div class="text-[9px] font-rajdhani font-semibold text-slate-400 tracking-wider">SHIELDING</div>
+                <div class="font-orbitron text-2xl font-black text-white tracking-tight leading-none">99.4%</div>
+                <div class="text-[8px] font-orbitron font-bold text-emerald-400 tracking-widest mt-0.5">NOMINAL</div>
+              </div>
+            </div>
+
+            <!-- Shield Parameters Breakdown -->
+            <div class="flex flex-col gap-2 font-rajdhani text-xs">
+              <div class="p-2 rounded bg-cyan-950/30 border border-cyan-500/20">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Magnetic Coil Deflection</div>
+                <div class="font-orbitron text-sm font-bold text-cyan-300">4.82 TESLA <span class="text-[9px] font-rajdhani text-emerald-400 font-normal">STABLE</span></div>
+              </div>
+              <div class="p-2 rounded bg-cyan-950/30 border border-cyan-500/20">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Hydrogen Polymer Layer</div>
+                <div class="font-orbitron text-sm font-bold text-slate-200">100% INTEGRITY</div>
+              </div>
+              <div class="p-2 rounded bg-cyan-950/30 border border-cyan-500/20">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Cosmic Ray Penetration</div>
+                <div class="font-orbitron text-sm font-bold text-emerald-400">0.02 µSv/h</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mini Live Sparkline Graph for Cosmic Ray Exposure -->
+          <div class="bg-[#050e1f]/70 rounded-lg p-2.5 border border-cyan-500/15">
+            <div class="flex justify-between items-center text-[10px] font-rajdhani text-slate-400 mb-1">
+              <span class="text-cyan-400 font-semibold uppercase tracking-wider">LIVE 6-HOUR EXPOSURE SPARKLINE</span>
+              <span class="text-slate-400 font-orbitron">AVG: 0.018 µSv/h</span>
+            </div>
+            <!-- SVG Sparkline -->
+            <div class="w-full h-11 relative">
+              <svg class="w-full h-full" viewBox="0 0 300 50" preserveAspectRatio="none">
+                <!-- Grid lines -->
+                <line x1="0" y1="12" x2="300" y2="12" stroke="rgba(0, 240, 255, 0.1)" stroke-dasharray="2,2"></line>
+                <line x1="0" y1="28" x2="300" y2="28" stroke="rgba(0, 240, 255, 0.1)" stroke-dasharray="2,2"></line>
+                <line x1="0" y1="44" x2="300" y2="44" stroke="rgba(0, 240, 255, 0.1)" stroke-dasharray="2,2"></line>
+                <!-- Sparkline Area Fill -->
+                <polygon points="0,38 25,36 50,39 75,34 100,32 125,35 150,22 175,25 200,34 225,36 250,33 275,35 300,33 300,50 0,50" fill="url(#sparkFill)" opacity="0.4"></polygon>
+                <!-- Sparkline Stroke -->
+                <polyline points="0,38 25,36 50,39 75,34 100,32 125,35 150,22 175,25 200,34 225,36 250,33 275,35 300,33" fill="none" stroke="#00f0ff" stroke-width="2" class="drop-shadow-[0_0_4px_#00f0ff]"></polyline>
+                <!-- Gradient definition -->
+                <defs>
+                  <linearGradient id="sparkFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#00f0ff"></stop>
+                    <stop offset="100%" stop-color="transparent"></stop>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div class="flex justify-between items-center text-[8.5px] font-rajdhani text-slate-500 mt-1">
+              <span>-6h (ORBIT APOGEE)</span>
+              <span>-3h (ATMOS GRAZE)</span>
+              <span class="text-cyan-400">NOW (TRANQUILITY BASE)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Panel: Emergency Override Controls (3 clean high-contrast outlined buttons) -->
+        <div class="glass-panel rounded-xl p-3.5 flex flex-col justify-between shrink-0 border-cyan-500/30">
+          <div class="flex items-center justify-between pb-1.5 border-b border-cyan-500/20">
+            <div class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <h2 class="font-orbitron text-xs font-bold tracking-wider text-cyan-300 uppercase">
+                Emergency Override Controls
+              </h2>
+            </div>
+            <span class="text-[9px] font-orbitron font-semibold text-slate-400 tracking-wider">COMMAND AUTH: LEVEL 4</span>
+          </div>
+
+          <!-- 3 Outlined Tactical Action Buttons -->
+          <div class="flex flex-col gap-2 my-2">            <!-- Button 1: SEAL ALL AIRLOCKS (Cyan outline) -->
+            <button onclick="triggerEmergencyAction('airlocks')" class="w-full py-2.5 px-3 rounded-lg border border-cyan-400/80 bg-cyan-950/30 hover:bg-cyan-500/20 text-cyan-300 hover:text-white font-orbitron text-xs font-bold tracking-wider transition-all flex items-center justify-between group shadow-[0_0_12px_rgba(0,240,255,0.15)] hover:shadow-[0_0_20px_rgba(0,240,255,0.4)] btn-action-interactive cursor-pointer">
+              <span class="flex items-center gap-2.5">
+                <svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                SEAL ALL AIRLOCKS
+              </span>
+              <span class="text-[10px] font-rajdhani font-semibold text-cyan-400/90 tracking-widest bg-cyan-900/40 px-2 py-0.5 rounded border border-cyan-400/30">
+                PNEUMATIC LOCK
+              </span>
+            </button>
+
+            <!-- Button 2: ACTIVATE RADIATION SHELTER MODE (Amber outline) -->
+            <button onclick="triggerEmergencyAction('shelter')" class="w-full py-2.5 px-3 rounded-lg border border-amber-500/80 bg-amber-950/25 hover:bg-amber-500/20 text-amber-300 hover:text-white font-orbitron text-xs font-bold tracking-wider transition-all flex items-center justify-between group shadow-[0_0_12px_rgba(245,158,11,0.15)] hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] btn-action-interactive cursor-pointer">
+              <span class="flex items-center gap-2.5">
+                <svg class="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                ACTIVATE RADIATION SHELTER MODE
+              </span>
+              <span class="text-[10px] font-rajdhani font-semibold text-amber-400/90 tracking-widest bg-amber-900/40 px-2 py-0.5 rounded border border-amber-400/30">
+                STORM BUNKER
+              </span>
+            </button>
+
+            <!-- Button 3: TRANSMIT EARTH DISTRESS BEACON (Crimson outline with pulse) -->
+            <button onclick="triggerEmergencyAction('distress')" class="w-full py-2.5 px-3 rounded-lg border border-rose-500/90 bg-rose-950/30 hover:bg-rose-600/30 text-rose-300 hover:text-white font-orbitron text-xs font-bold tracking-wider transition-all flex items-center justify-between group crimson-pulse-border btn-action-interactive cursor-pointer">
+              <span class="flex items-center gap-2.5">
+                <svg class="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                TRANSMIT EARTH DISTRESS BEACON
+              </span>
+              <span class="text-[10px] font-orbitron font-black text-rose-300 tracking-widest bg-rose-900/50 px-2 py-0.5 rounded border border-rose-500/50">
+                MAYDAY (PRIORITY 1)
+              </span>
+            </button></div>
+
+          <!-- Toast Notification HUD Feedback Banner -->
+          <div id="actionToast" class="text-center py-1 text-[10px] font-rajdhani font-semibold text-cyan-300 opacity-0 transition-opacity duration-300">
+            [READY] SELECT EMERGENCY COMMAND TO ENGAGE HABITAT PROTOCOLS
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+  <button onclick="document.querySelector('main').scrollTo({top: 0, behavior: 'smooth'})" aria-label="Back to top" class="fixed bottom-14 right-8 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-panel border border-cyan-400/60 bg-cyan-950/60 hover:bg-cyan-500/20 text-cyan-300 hover:text-white font-orbitron text-[10px] font-bold tracking-wider transition-all shadow-[0_0_12px_rgba(0,240,255,0.3)] hover:shadow-[0_0_20px_rgba(0,240,255,0.6)] cursor-pointer group"><svg class="w-3.5 h-3.5 text-cyan-400 group-hover:-translate-y-0.5 transition-transform drop-shadow-[0_0_4px_#00f0ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"></path></svg><span>TOP // 01</span></button></main>
+
+  <!-- ================= BOTTOM STATUS FOOTER ================= -->
+  <footer class="relative z-20 w-full px-6 py-2 glass-panel-subtle border-t border-cyan-500/20 flex items-center justify-between text-[10px] font-rajdhani font-semibold text-slate-400 shrink-0">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-1.5 text-cyan-300 font-orbitron">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 cyan-pulse"></span>
+        CORE AUTONOMY: <span class="text-white">OPTIMAL</span>
+      </div>
+      <span class="text-slate-600">•</span>
+      <div class="flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        RAD SHIELDING: <span class="text-slate-200">NOMINAL (99.4%)</span>
+      </div>
+      <span class="text-slate-600">•</span>
+      <div class="flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+        ENCRYPTION: <span class="text-cyan-300 font-orbitron">QUANTUM ACTIVE</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <span class="text-slate-400">TRANSMISSION FREQ: <span class="text-slate-300">8.44 GHz X-BAND</span></span>
+      <span class="text-slate-600">•</span>
+      <span class="font-orbitron text-cyan-400/80">CC-SEC // V4.8.2</span>
+    </div>
+  </footer>
+
+  <!-- Interactivity Scripts -->
+  <script>
+    // Navigation routing logic matching the established Cosmo Care ecosystem
+    function goToHome() {
+      // In live ecosystem, navigates back to Homepage
+      window.location.href = "{{DATA:SCREEN:SCREEN_6}}";
+    }
+
+    function goToDevices() {
+      // Navigates to Devices & Habitat
+      window.location.href = "{{DATA:SCREEN:SCREEN_1}}";
+    }
+
+    function goToStats() {
+      // Navigates to Statistics & Triage
+      window.location.href = "{{DATA:SCREEN:SCREEN_4}}";
+    }
+
+    // Emergency protocol toast HUD action feedback
+    function triggerEmergencyAction(type) {
+      const toast = document.getElementById('actionToast');
+      if (!toast) return;
+      
+      let message = '';
+      if (type === 'airlocks') {
+        message = '⚠ COMMAND CONFIRMED: ALL 6 COMPARTMENT AIRLOCKS HERMETICALLY SEALED [101.3 kPa]';
+        toast.className = 'text-center py-1 text-[10.5px] font-orbitron font-bold text-cyan-300 transition-opacity duration-300 opacity-100';
+      } else if (type === 'shelter') {
+        message = '⚠ COMMAND CONFIRMED: RADIATION STORM SHELTER ENERGIZED. CREW QUARTERS REINFORCED (4.95 T)';
+        toast.className = 'text-center py-1 text-[10.5px] font-orbitron font-bold text-amber-300 transition-opacity duration-300 opacity-100';
+      } else if (type === 'distress') {
+        message = '🚨 CRITICAL MAYDAY: HIGH-GAIN EARTH DISTRESS BEACON TRANSMITTED ACROSS DSN ARRAY';
+        toast.className = 'text-center py-1 text-[10.5px] font-orbitron font-bold text-rose-400 transition-opacity duration-300 opacity-100';
+      }
+      
+      toast.innerText = message;
+      setTimeout(() => {
+        toast.style.opacity = '0.4';
+      }, 4000);
+    }
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+  (function() {
+    const notifBtn = document.getElementById('notif-btn');
+    const notifDrawer = document.getElementById('notif-drawer');
+    const notifBadge = document.getElementById('notif-badge');
+    const markAllReadBtn = document.getElementById('mark-all-read-btn');
+
+    if (notifBtn && notifDrawer) {
+      notifBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        notifDrawer.classList.toggle('hidden');
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!notifDrawer.contains(e.target) && !notifBtn.contains(e.target)) {
+          notifDrawer.classList.add('hidden');
+        }
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !notifDrawer.classList.contains('hidden')) {
+          notifDrawer.classList.add('hidden');
+        }
+      });
+    }
+
+    if (markAllReadBtn && notifBadge) {
+      markAllReadBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        notifBadge.style.display = 'none';
+        const items = document.querySelectorAll('#notif-items-list .notif-item');
+        items.forEach(function(item) {
+          item.classList.add('opacity-40');
+        });
+        markAllReadBtn.textContent = 'All read';
+        markAllReadBtn.disabled = true;
+        markAllReadBtn.classList.add('text-slate-500');
+      });
+    }
+  })();
+</script>
+
+<!-- Floating Camera Monitor Trigger & Expandable Panel Container -->
+<div class="fixed bottom-14 left-6 z-50 flex flex-col items-start">
+  <!-- Expandable Optical Mood Monitor Panel -->
+  <div id="cosmo-cam-panel" class="hidden mb-3 w-80 rounded-2xl border border-cyan-400/40 glass-panel shadow-[0_16px_40px_rgba(0,0,0,0.85)] p-4 text-left backdrop-blur-md transition-all duration-300">
+    <!-- Panel Header -->
+    <div class="flex items-center justify-between pb-2.5 border-b border-cyan-500/20">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span class="font-orbitron text-xs font-bold text-white tracking-wider">OPTICAL MOOD MONITOR</span>
+      </div>
+      <button id="cosmo-cam-close" aria-label="Close Camera Monitor" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-cyan-500/20 transition-all cursor-pointer text-sm font-bold">
+        ✕
+      </button>
+    </div>
+
+    <!-- 16:10 Video Feed Frame with Reticles -->
+    <div class="relative my-3 rounded-lg overflow-hidden border border-cyan-500/30 bg-[#020611] aspect-[16/10] flex items-center justify-center">
+      <!-- Ambient video mock overlay/nebula -->
+      <div class="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDrfVNSinjSO_u3_rcAI6WljrelqWL6X_YUASgP5-k1LpK9ihucMgte6yLv9HwT4E4OoR2QaxbncuHDBFtR8ScBrUHa0a33rUptOxw2sisCFPAHroojguk0HlW61a9SNZIPoOEaI_zq50ux-ZN2cDPSoorMkskZj4vVbomvwLU302NfkvKEtrCN1kpxGaFtbdIBBE7QdtDnxokngrwplPkOi6n91fanvVhIRYrpzvk6cKsrxRScogrYmw');"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-[#020611] via-transparent to-transparent"></div>
+
+      <!-- Optical Reticle Corners -->
+      <div class="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-cyan-400"></div>
+      <div class="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-cyan-400"></div>
+      <div class="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-cyan-400"></div>
+      <div class="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-cyan-400"></div>
+
+      <!-- Optical Scan Line & Face Framing Box -->
+      <div class="relative w-20 h-24 border border-cyan-400/50 rounded-md flex flex-col items-center justify-center shadow-[0_0_12px_rgba(0,240,255,0.25)]">
+        <div class="w-full h-0.5 bg-cyan-400 shadow-[0_0_6px_#00f0ff] animate-pulse"></div>
+        <span class="text-[8px] font-orbitron font-semibold text-cyan-300 mt-2 tracking-widest">CREW #01</span>
+      </div>
+
+      <!-- Live Telemetry Overlay -->
+      <div class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/60 font-orbitron text-[8px] text-cyan-300 flex items-center gap-1 border border-cyan-500/20">
+        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> REC • 60 FPS
+      </div>
+      <div class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 font-orbitron text-[8px] text-slate-300 border border-cyan-500/20">
+        EXP: NOMINAL
+      </div>
+    </div>
+
+    <!-- Mood Analysis Badge -->
+    <div class="p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between">
+      <div class="flex items-center gap-1.5 font-rajdhani text-xs font-semibold text-emerald-400">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span>STATUS: OPTIMAL / FOCUSED</span>
+      </div>
+      <span class="font-orbitron text-[9px] font-bold text-cyan-300 bg-cyan-900/40 px-2 py-0.5 rounded border border-cyan-400/30">
+        CONF: 94%
+      </span>
+    </div>
+
+    <!-- Privacy / Local Inference Footer -->
+    <div class="mt-2 pt-2 border-t border-cyan-500/15 flex items-center justify-between text-[9px] font-rajdhani text-slate-400">
+      <span class="flex items-center gap-1 text-slate-400">
+        <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+        </svg>
+        On-device processing • Video never uploaded
+      </span>
+    </div>
+  </div>
+
+  <!-- Circular Light Blue Camera Trigger Button (60px x 60px) -->
+  <button id="cosmo-cam-trigger" aria-label="Toggle Optical Mood Monitor" class="relative w-[60px] h-[60px] rounded-full bg-slate-950/80 backdrop-blur-xl border-2 border-sky-400/70 flex items-center justify-center text-cyan-300 hover:text-white transition-all cursor-pointer group shadow-[0_0_25px_rgba(56,189,248,0.6),0_0_45px_rgba(0,240,255,0.35)] hover:scale-105 active:scale-95 animate-pulse">
+    <!-- Video Camera SVG Icon -->
+    <svg class="w-7 h-7 text-[#7dd3fc] drop-shadow-[0_0_8px_#00f0ff] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+    </svg>
+    <!-- Live Emerald Optical Beacon Dot -->
+    <span class="absolute top-1 right-1 w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] border-2 border-slate-950 animate-ping"></span>
+    <span class="absolute top-1 right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-950"></span>
+  </button>
+</div>
+
+<!-- Interactivity Script for Camera Monitor -->
+<script>
+  (function() {
+    const trigger = document.getElementById('cosmo-cam-trigger');
+    const panel = document.getElementById('cosmo-cam-panel');
+    const closeBtn = document.getElementById('cosmo-cam-close');
+
+    if (trigger && panel) {
+      trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        panel.classList.toggle('hidden');
+      });
+
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          panel.classList.add('hidden');
+        });
+      }
+
+      document.addEventListener('click', function(e) {
+        if (!panel.contains(e.target) && !trigger.contains(e.target)) {
+          panel.classList.add('hidden');
+        }
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !panel.classList.contains('hidden')) {
+          panel.classList.add('hidden');
+        }
+      });
+    }
+  })();
+</script></body></html>

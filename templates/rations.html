@@ -1,0 +1,979 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cosmo Care - Lights, Sleep &amp; Rations</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&amp;family=Montserrat:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      background-color: #030712;
+      color: #E2E8F0;
+      user-select: none;
+    }
+    .font-orbitron { font-family: 'Orbitron', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Glassmorphism primitives */
+    .glass-panel {
+      background: rgba(10, 18, 30, 0.68);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.16);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+    }
+    .glass-panel-subtle {
+      background: rgba(8, 14, 26, 0.55);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-panel-active {
+      background: rgba(14, 27, 46, 0.75);
+      border: 1px solid rgba(6, 182, 212, 0.45);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.18);
+    }
+
+    /* Glows and accents */
+    .glow-cyan {
+      box-shadow: 0 0 16px rgba(6, 182, 212, 0.45);
+    }
+    .text-glow-cyan {
+      text-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+    }
+
+    /* Range slider styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    input[type=range]::-webkit-slider-thumb {
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      background: #06B6D4;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -6px;
+      box-shadow: 0 0 12px #06B6D4, 0 0 2px #ffffff;
+      border: 2px solid #ffffff;
+      transition: transform 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    /* Custom scrollbars inside compact tables */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(6, 182, 212, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(6, 182, 212, 0.6);
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .animate-pulse-dot {
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+  </style>
+<style id="hud-motion-styles">
+    .hud-workspace-container {
+      position: relative;
+      will-change: transform, opacity;
+    }
+    .hud-scan-sweep {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      pointer-events: none;
+      z-index: 40;
+      opacity: 0;
+      background: linear-gradient(90deg, transparent, rgba(6,182,212,0.9) 50%, transparent);
+      box-shadow: 0 0 10px rgba(6,182,212,0.8);
+    }
+    .hud-scan-sweep.active {
+      animation: hudScanSweep 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes hudScanSweep {
+      0% { opacity: 0; transform: scaleX(0.1); }
+      40% { opacity: 1; transform: scaleX(0.85); }
+      100% { opacity: 0; transform: scaleX(1); }
+    }
+    .hud-workspace-outgoing-left {
+      opacity: 0;
+      transform: scale(0.985) translateX(-16px);
+      transition: opacity 220ms ease-in, transform 220ms ease-in;
+    }
+    .hud-workspace-outgoing-right {
+      opacity: 0;
+      transform: scale(0.985) translateX(16px);
+      transition: opacity 220ms ease-in, transform 220ms ease-in;
+    }
+    .hud-workspace-incoming {
+      animation: hudWorkspaceIn 340ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes hudWorkspaceIn {
+      0% { opacity: 0; transform: scale(0.985) translateX(var(--glide-from-x, 20px)); }
+      100% { opacity: 1; transform: scale(1) translateX(0); }
+    }
+    .stagger-card-1 {
+      animation: cardEntrance 300ms ease-out 0ms backwards;
+    }
+    .stagger-card-2 {
+      animation: cardEntrance 300ms ease-out 35ms backwards;
+    }
+    .stagger-card-3 {
+      animation: cardEntrance 300ms ease-out 70ms backwards;
+    }
+    @keyframes cardEntrance {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hud-workspace-container,
+      .hud-scan-sweep,
+      .hud-workspace-outgoing-left,
+      .hud-workspace-outgoing-right,
+      .hud-workspace-incoming,
+      .stagger-card-1,
+      .stagger-card-2,
+      .stagger-card-3 {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+      }
+    }
+  </style></head>
+<body class="relative h-screen w-screen overflow-hidden flex flex-col justify-between page-enter-anim">
+
+  <!-- Background Space Canvas / Cosmic Layer -->
+  <div class="absolute inset-0 z-0 bg-cover bg-center pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAWKb2_zCnt5JsjHPGQlecVBCnG-i4B4Oy1O7PGwFAd1ILipOIlhmMoI2s6VckdUN5kTjhmud0wU6Um6uoJBi88eWqssrqTMMJy3iSO23goxaZxwDlOOzoXGQBpekloA8TEWy6_oC0bNUNG-iENhGs7hZxr4tyRoRvz3jTvUHKbZUeJ4ni8YBNUlUWquP5TnbcSqwuWlZj5RI6TFFdXDKbR9exk74CsG4rBUbLKCruxg3-GRAFpyPux7Q'); opacity: 0.55; filter: saturate(1.2) contrast(1.15);"></div>
+  <div class="absolute inset-0 z-0 bg-gradient-to-b from-[#02050c]/85 via-[#030814]/75 to-[#010308]/90 pointer-events-none"></div>
+
+  <!-- HUD Subtle Grid Overlay -->
+  <div class="absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(56,189,248,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(56,189,248,0.03)_1px,transparent_1px)] bg-[size:48px_48px] pointer-events-none"></div>
+
+  <!-- Top Navigation Bar (Fixed 64px) -->
+  <header class="relative z-20 w-full px-6 py-2.5 flex items-center justify-between border-b border-cyan-500/20 bg-slate-950/80 backdrop-blur-md">    <!-- Top-Left: Brand Wordmark linking to SCREEN_12 (Homepage) -->
+    <a href="{{DATA:SCREEN:SCREEN_12}}" id="nav-brand-logo" class="flex items-center gap-3.5 group cursor-pointer transition-transform duration-150 active:scale-95">
+      <div class="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center glow-cyan group-hover:border-cyan-300 transition-colors">
+        <span class="text-cyan-400 font-bold text-xl leading-none">+</span>
+      </div>
+      <div>
+        <div class="font-orbitron tracking-widest text-lg font-bold text-white flex items-center gap-1.5">
+          <span>COSMO</span>
+          <span class="text-cyan-400">CARE</span>
+        </div>
+        <div class="text-[9px] tracking-[0.25em] text-cyan-200/70 font-semibold uppercase">
+          Healthcare Beyond Earth
+        </div>
+      </div>
+    </a>
+
+    <!-- Top-Center: Expanding 5-Dock Navigation with exact screen links -->
+    <nav class="flex items-center gap-1.5 p-1 rounded-full bg-slate-900/80 border border-cyan-500/25 backdrop-blur-xl shadow-lg shadow-black/40">
+      <!-- 01 HOME -->
+      <a href="{{DATA:SCREEN:SCREEN_12}}" id="tab-home" class="px-3.5 py-1.5 rounded-full text-[11px] font-orbitron font-medium tracking-wider text-slate-300 hover:text-cyan-300 hover:bg-slate-800/60 transition-all flex items-center gap-1.5 cursor-pointer">
+        <span class="text-slate-500 text-[9px]">01</span>
+        <span>HOME</span>
+      </a>
+
+      <!-- 02 DEVICES & HABITAT -->
+      <a href="{{DATA:SCREEN:SCREEN_7}}" id="tab-devices" class="px-3.5 py-1.5 rounded-full text-[11px] font-orbitron font-medium tracking-wider text-slate-300 hover:text-cyan-300 hover:bg-slate-800/60 transition-all flex items-center gap-1.5 cursor-pointer">
+        <span class="text-slate-500 text-[9px]">02</span>
+        <span>DEVICES &amp; HABITAT</span>
+      </a>
+
+      <!-- 03 STATISTICS & TRIAGE -->
+      <a href="{{DATA:SCREEN:SCREEN_10}}" id="tab-stats" class="px-3.5 py-1.5 rounded-full text-[11px] font-orbitron font-medium tracking-wider text-slate-300 hover:text-cyan-300 hover:bg-slate-800/60 transition-all flex items-center gap-1.5 cursor-pointer">
+        <span class="text-slate-500 text-[9px]">03</span>
+        <span>STATISTICS &amp; TRIAGE</span>
+      </a>
+
+      <!-- 04 SECURITY & ALERTS -->
+      <a href="{{DATA:SCREEN:SCREEN_5}}" id="tab-security" class="px-3.5 py-1.5 rounded-full text-[11px] font-orbitron font-medium tracking-wider text-slate-300 hover:text-cyan-300 hover:bg-slate-800/60 transition-all flex items-center gap-1.5 cursor-pointer">
+        <span class="text-slate-500 text-[9px]">04</span>
+        <span>SECURITY &amp; ALERTS</span>
+      </a>
+
+      <!-- 05 LIGHTS, SLEEP & RATIONS (ACTIVE) -->
+      <a href="{{DATA:SCREEN:SCREEN_3}}" id="tab-sleep-rations" class="px-3.5 py-1.5 rounded-full text-[11px] font-orbitron font-semibold tracking-wider text-cyan-200 bg-cyan-950/80 border border-cyan-400/50 shadow-[0_0_12px_rgba(6,182,212,0.35)] flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse-dot"></span>
+        <span class="text-cyan-400 text-[9px]">05</span>
+        <span>SLEEP &amp; RATIONS</span>
+      </a>
+    </nav>
+
+    <!-- Top-Right: Ship Clock, Notification Bell Drawer & Crew Profile Avatar -->
+    <div class="flex items-center gap-3.5"><div class="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-[11px] font-mono text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot"></span><span id="live-utc-clock">06:34:45 UTC</span></div><div class="relative"><button id="btn-notification-trigger" class="relative p-2 rounded-xl bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400 flex items-center justify-center text-cyan-300 hover:text-white transition-all shadow-[0_0_10px_rgba(6,182,212,0.15)] active:scale-95"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg><span id="notif-badge" class="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] border border-slate-900/60 animate-pulse"></span></button></div><div class="flex items-center gap-2 pl-2 border-l border-slate-800"><div class="relative"><div class="w-8 h-8 rounded-full bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-cyan-300 font-orbitron font-semibold text-xs shadow-[0_0_8px_rgba(6,182,212,0.3)]">SM</div><span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border border-slate-950"></span></div><div class="hidden md:flex flex-col text-left"><span class="text-xs font-orbitron font-medium text-white">Dr. Mitchell</span><span class="text-[9px] font-mono text-cyan-400/80">FLIGHT SURGEON</span></div></div></div></header><div id="notification-drawer" class="hidden fixed top-16 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] glass-panel border border-cyan-400/40 rounded-xl p-4 shadow-2xl backdrop-blur-xl"><div class="flex items-center justify-between pb-3 border-b border-cyan-500/20"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4]"></div><h3 class="font-orbitron text-xs font-bold tracking-wider text-white uppercase">MISSION NOTIFICATIONS</h3></div><button id="btn-mark-all-read" class="text-[10px] font-mono text-cyan-300 hover:text-white transition-colors">MARK READ</button></div><div class="py-2 divide-y divide-slate-800/80 max-h-72 overflow-y-auto"><div class="py-2.5 flex items-start gap-2.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></span><div><div class="text-xs font-medium text-white font-mono">Electrolyte Mix Buffer Low</div><div class="text-[10px] text-slate-400 font-mono">Stock projected to drop beneath 60-day safety margin on Sol 180.</div></div></div><div class="py-2.5 flex items-start gap-2.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1 shrink-0"></span><div><div class="text-xs font-medium text-white font-mono">Circadian Melatonin Ramp Scheduled</div><div class="text-[10px] text-slate-400 font-mono">Hab module lights transitioning to 2700K amber spectrum at 21:00 UTC.</div></div></div><div class="py-2.5 flex items-start gap-2.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1 shrink-0"></span><div><div class="text-xs font-medium text-white font-mono">Water Reclamation Loop 99.4%</div><div class="text-[10px] text-slate-400 font-mono">Potable filtration run completed with zero bio-contaminant flags.</div></div></div></div><div class="pt-2 border-t border-cyan-500/20 text-center"><a href="{{DATA:SCREEN:SCREEN_5}}" class="inline-flex items-center justify-center gap-1.5 text-[11px] font-orbitron font-semibold text-cyan-300 hover:text-white transition-colors"><span>VIEW ALL SECURITY &amp; ALERTS</span><span>→</span></a></div></div>
+
+  <!-- Main Viewport Body (Full Remaining Height, Strict 100vh Fit) -->
+  <main class="relative z-10 flex-1 px-6 py-3.5 flex flex-col gap-3 min-h-0 hud-workspace-container overflow-y-auto"><div class="hud-scan-sweep active" id="hud-scan-line" aria-hidden="true"></div>
+
+<!-- Sticky Top Section Header: Habitat Circadian, Hypnogram & Rations Console -->
+<section class="glass-panel rounded-xl px-5 py-3 flex flex-wrap items-center justify-between border border-cyan-500/25 shadow-lg shrink-0 gap-3 stagger-card-1">
+  <div class="flex items-center gap-3.5 flex-wrap">
+    <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.35)]">
+      <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-dot"></span>
+      <span class="text-[11px] font-orbitron font-bold tracking-wider text-cyan-200 uppercase">SOL 142</span>
+    </div>
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-sm font-orbitron font-bold text-white tracking-wide uppercase">HABITAT CIRCADIAN, SLEEP HYPNOGRAM &amp; RATIONS CONSOLE</h1>
+        <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/40 font-semibold">EXP-73 TELEMETRY</span>
+      </div>
+      <div class="text-[10px] font-mono text-slate-400 mt-0.5 flex items-center gap-3 flex-wrap">
+        <span>MELATONIN SYNC LOCK: <strong class="text-emerald-400">ACTIVE (2700K)</strong></span>
+        <span class="text-slate-700">•</span>
+        <span>FOOD RESERVES: <strong class="text-cyan-300">184 SOLS</strong></span>
+        <span class="text-slate-700">•</span>
+        <span>WATER RECIRCULATION: <strong class="text-cyan-300">99.4% NOMINAL</strong></span>
+      </div>
+    </div>
+  </div>
+  <div class="flex items-center gap-2.5">
+    <div class="px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-700 text-right">
+      <div class="text-[8px] font-mono text-slate-400 uppercase tracking-widest">CIRCADIAN CYCLE</div>
+      <div class="text-xs font-orbitron font-bold text-amber-300">DUSK PHASE 04</div>
+    </div>
+    <div class="px-3 py-1 rounded-lg bg-cyan-950/50 border border-cyan-400/40 text-right">
+      <div class="text-[8px] font-mono text-cyan-300/80 uppercase tracking-widest">CABIN LUX LEVEL</div>
+      <div class="text-xs font-orbitron font-bold text-cyan-200">185 LUX // 2700K</div>
+    </div>
+  </div>
+</section>
+
+<!-- ROW 1: CIRCADIAN LIGHTING CONSOLE -->
+<section class="glass-panel rounded-xl p-4 border border-cyan-500/25 flex flex-col gap-3.5 shrink-0 stagger-card-2">
+  <div class="flex items-center justify-between pb-2 border-b border-cyan-500/20">
+    <div class="flex items-center gap-2">
+      <div class="w-2.5 h-2.5 rounded-sm bg-cyan-400 shadow-[0_0_8px_#06b6d4]"></div>
+      <h2 class="font-orbitron text-xs font-bold tracking-wider text-white uppercase">01 // Circadian Lighting Console &amp; Spectral Management</h2>
+      <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-400/30">DYNAMIC KELVIN LOGIC</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-[10px] font-mono text-slate-400">DAY/NIGHT AUTOSYNC:</span>
+      <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 border border-emerald-400/40 text-emerald-300">ENABLED</span>
+    </div>
+  </div>
+
+  <!-- Sub-grid: 4 Habitat Zones + Dial Controls -->
+  <div class="grid grid-cols-12 gap-3.5">
+    <!-- Spectrum Dial & Lumens Controls -->
+    <div class="col-span-5 flex flex-col justify-between glass-panel-subtle rounded-lg p-3 border border-cyan-500/20">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono text-slate-300 font-semibold">HABITAT SPECTRUM DIAL</span>
+        <span class="text-xs font-orbitron font-bold text-amber-300">2700K (MELATONIN INDUCTION)</span>
+      </div>
+      <!-- Kelvin Slider Bar -->
+      <div class="my-2 flex flex-col gap-1">
+        <div class="flex justify-between text-[9px] font-mono text-slate-400">
+          <span class="text-amber-300">2700K WARM INDUCTION</span>
+          <span class="text-cyan-200">4500K WORK</span>
+          <span class="text-cyan-400">6500K HIGH-NOON ALERT</span>
+        </div>
+        <input id="kelvin-spectrum-slider" type="range" min="2700" max="6500" value="2700" step="100" class="w-full accent-cyan-400 cursor-pointer">
+      </div>
+      <!-- RGBW Lumens Slider -->
+      <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-700/50">
+        <span class="text-[10px] font-mono text-slate-400">RGBW LUMENS DENSITY:</span>
+        <span class="font-orbitron text-xs font-bold text-cyan-300">420 lm/m² (76%)</span>
+      </div>
+      <!-- UV-C Sterilizing Cycle Countdown -->
+      <div class="mt-2 p-2 rounded bg-slate-900/80 border border-slate-800 flex items-center justify-between text-[10px] font-mono">
+        <span class="text-slate-400 flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span> UV-C SANITIZATION CYCLE:
+        </span>
+        <span class="text-cyan-300 font-bold font-orbitron">NEXT: T-04H 18M</span>
+      </div>
+    </div>
+
+    <!-- Active Habitat Zones Grid -->
+    <div class="col-span-7 grid grid-cols-2 gap-2.5">
+      <!-- Zone 1: Galley -->
+      <div class="glass-panel-subtle rounded-lg p-2.5 border border-cyan-500/20 flex flex-col justify-between hover:border-cyan-400/50 transition-colors">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-orbitron font-semibold text-white">GALLEY &amp; COMMONS</span>
+          <span class="text-[9px] font-mono text-amber-300 px-1.5 py-0.5 rounded bg-amber-950/50 border border-amber-400/30">2700K DUSK</span>
+        </div>
+        <div class="my-1 text-[10px] font-mono text-slate-300 flex justify-between">
+          <span>INTENSITY: 55%</span>
+          <span class="text-emerald-400">STATUS: NOMINAL</span>
+        </div>
+        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+          <div class="h-full bg-gradient-to-r from-amber-400 to-amber-200 rounded-full" style="width: 55%"></div>
+        </div>
+      </div>
+
+      <!-- Zone 2: Bio-Lab -->
+      <div class="glass-panel-subtle rounded-lg p-2.5 border border-cyan-500/20 flex flex-col justify-between hover:border-cyan-400/50 transition-colors">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-orbitron font-semibold text-white">BIO-MEDICAL LAB</span>
+          <span class="text-[9px] font-mono text-cyan-300 px-1.5 py-0.5 rounded bg-cyan-950/50 border border-cyan-400/30">5200K DAY</span>
+        </div>
+        <div class="my-1 text-[10px] font-mono text-slate-300 flex justify-between">
+          <span>INTENSITY: 88%</span>
+          <span class="text-cyan-300">RESEARCH LOCK</span>
+        </div>
+        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+          <div class="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 rounded-full" style="width: 88%"></div>
+        </div>
+      </div>
+
+      <!-- Zone 3: Sleep Pods Alpha-Delta -->
+      <div class="glass-panel-subtle rounded-lg p-2.5 border border-cyan-400/40 bg-cyan-950/30 flex flex-col justify-between shadow-[0_0_12px_rgba(6,182,212,0.15)]">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-orbitron font-semibold text-cyan-100">SLEEP PODS ALPHA-DELTA</span>
+          <span class="text-[9px] font-mono text-cyan-400 px-1.5 py-0.5 rounded bg-cyan-950/60 border border-cyan-400/40 font-bold animate-pulse">REST MODE</span>
+        </div>
+        <div class="my-1 text-[10px] font-mono text-slate-300 flex justify-between">
+          <span>INTENSITY: 12%</span>
+          <span class="text-emerald-400">MELATONIN LOCK</span>
+        </div>
+        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+          <div class="h-full bg-gradient-to-r from-cyan-600 to-indigo-400 rounded-full" style="width: 12%"></div>
+        </div>
+      </div>
+
+      <!-- Zone 4: Flight Deck -->
+      <div class="glass-panel-subtle rounded-lg p-2.5 border border-cyan-500/20 flex flex-col justify-between hover:border-cyan-400/50 transition-colors">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-orbitron font-semibold text-white">FLIGHT &amp; AVIONICS DECK</span>
+          <span class="text-[9px] font-mono text-slate-300 px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700">RED NIGHT WATCH</span>
+        </div>
+        <div class="my-1 text-[10px] font-mono text-slate-300 flex justify-between">
+          <span>INTENSITY: 30%</span>
+          <span class="text-amber-400">LOW-GLARE HUD</span>
+        </div>
+        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+          <div class="h-full bg-gradient-to-r from-red-500 to-amber-500 rounded-full" style="width: 30%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROW 2: CREW HYPNOGRAM & SLEEP QUALITY MATRIX -->
+<section class="glass-panel rounded-xl p-4 border border-cyan-500/25 flex flex-col gap-3.5 shrink-0 stagger-card-3">
+  <div class="flex items-center justify-between pb-2 border-b border-cyan-500/20">
+    <div class="flex items-center gap-2">
+      <div class="w-2.5 h-2.5 rounded-sm bg-indigo-400 shadow-[0_0_8px_#818cf8]"></div>
+      <h2 class="font-orbitron text-xs font-bold tracking-wider text-white uppercase">02 // Crew Hypnogram, Polysomnography &amp; Acoustic Shielding</h2>
+    </div>
+    <div class="flex items-center gap-3 text-[10px] font-mono text-slate-400">
+      <span>ACTIVE SOUND SHIELDING: <strong class="text-emerald-400">ON</strong></span>
+      <span class="text-slate-700">|</span>
+      <span>PINK NOISE MASKER: <strong class="text-cyan-300">38 dB STABLE</strong></span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-12 gap-3.5">
+    <!-- Sleep Efficiency Summary KPI Card -->
+    <div class="col-span-4 glass-panel-subtle rounded-lg p-3 border border-cyan-500/20 flex flex-col justify-between">
+      <div>
+        <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">HABITAT SLEEP EFFICIENCY</div>
+        <div class="mt-1 flex items-baseline gap-2">
+          <span class="text-3xl font-orbitron font-extrabold text-white tracking-tight">88.4%</span>
+          <span class="text-xs font-mono text-emerald-400 font-bold">NOMINAL</span>
+        </div>
+      </div>
+      <div class="space-y-1.5 my-2 text-xs font-mono">
+        <div class="flex justify-between text-slate-300">
+          <span>DEEP REM DURATION:</span>
+          <strong class="text-cyan-300">2.4h (31%)</strong>
+        </div>
+        <div class="flex justify-between text-slate-300">
+          <span>HEART RATE VARIABILITY:</span>
+          <strong class="text-emerald-400">HRV 64 ms (OPTIMAL)</strong>
+        </div>
+        <div class="flex justify-between text-slate-300">
+          <span>MICROGRAVITY AWAKENINGS:</span>
+          <strong class="text-slate-400">0.8 / SLEEP CYCLE</strong>
+        </div>
+      </div>
+      <div class="p-2 rounded bg-black/40 border border-slate-800 text-[10px] font-mono text-slate-400 flex items-center justify-between">
+        <span>POD ACOUSTIC ISOLATION:</span>
+        <span class="text-cyan-300 font-semibold">-42 dB ATTENUATION</span>
+      </div>
+    </div>
+
+    <!-- Individual Crew Member Sleep Trackers Table -->
+    <div class="col-span-8 overflow-hidden rounded-lg border border-slate-700/60 bg-slate-950/60 flex flex-col">
+      <div class="grid grid-cols-12 px-3 py-1.5 bg-slate-900/90 text-[10px] font-mono uppercase tracking-wider text-cyan-400/80 border-b border-slate-700/60">
+        <div class="col-span-4">CREW MEMBER // POD</div>
+        <div class="col-span-3 text-center">SLEEP STAGE / REM</div>
+        <div class="col-span-2 text-center">HRV / SPO2</div>
+        <div class="col-span-3 text-right">HYPNOGRAM STATUS</div>
+      </div>
+      <div class="divide-y divide-slate-800/80 text-xs font-mono">
+        <!-- Crew 1 -->
+        <div class="grid grid-cols-12 px-3.5 py-2 items-center hover:bg-slate-900/40 transition-colors">
+          <div class="col-span-4 flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
+            <span class="text-white font-medium text-xs">Dr. Sarah Mitchell (A004)</span>
+          </div>
+          <div class="col-span-3 text-center text-slate-300 text-[11px]">7.8 hrs • REM 2.4h</div>
+          <div class="col-span-2 text-center text-cyan-300 text-[11px]">64 ms • 99%</div>
+          <div class="col-span-3 text-right">
+            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">RESTED // 94%</span>
+          </div>
+        </div>
+        <!-- Crew 2 -->
+        <div class="grid grid-cols-12 px-3.5 py-2 items-center hover:bg-slate-900/40 transition-colors">
+          <div class="col-span-4 flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]"></span>
+            <span class="text-white font-medium text-xs">Cdr. Alexander Vance (A001)</span>
+          </div>
+          <div class="col-span-3 text-center text-slate-300 text-[11px]">7.2 hrs • REM 1.9h</div>
+          <div class="col-span-2 text-center text-cyan-300 text-[11px]">58 ms • 98%</div>
+          <div class="col-span-3 text-right">
+            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">NOMINAL // 88%</span>
+          </div>
+        </div>
+        <!-- Crew 3 -->
+        <div class="grid grid-cols-12 px-3.5 py-2 items-center hover:bg-slate-900/40 transition-colors">
+          <div class="col-span-4 flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
+            <span class="text-white font-medium text-xs">Lt. Chen Wei (A003)</span>
+          </div>
+          <div class="col-span-3 text-center text-slate-300 text-[11px]">8.1 hrs • REM 2.6h</div>
+          <div class="col-span-2 text-center text-cyan-300 text-[11px]">68 ms • 99%</div>
+          <div class="col-span-3 text-right">
+            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">OPTIMAL // 96%</span>
+          </div>
+        </div>
+        <!-- Crew 4 -->
+        <div class="grid grid-cols-12 px-3.5 py-2 items-center hover:bg-slate-900/40 transition-colors">
+          <div class="col-span-4 flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]"></span>
+            <span class="text-white font-medium text-xs">Spc. Elena Gomez (A006)</span>
+          </div>
+          <div class="col-span-3 text-center text-slate-300 text-[11px]">6.1 hrs • REM 1.2h</div>
+          <div class="col-span-2 text-center text-amber-300 text-[11px]">49 ms • 97%</div>
+          <div class="col-span-3 text-right">
+            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-400/40">ADVISORY // 74%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROW 3: FOOD RATIONS, METABOLIC FUEL & HYDRATION RESERVES -->
+<section class="glass-panel rounded-xl p-4 border border-cyan-500/25 flex flex-col gap-3.5 shrink-0 stagger-card-3">
+  <div class="flex items-center justify-between pb-2 border-b border-cyan-500/20">
+    <div class="flex items-center gap-2">
+      <div class="w-2.5 h-2.5 rounded-sm bg-emerald-400 shadow-[0_0_8px_#34d399]"></div>
+      <h2 class="font-orbitron text-xs font-bold tracking-wider text-white uppercase">03 // Deep-Space Rations, Metabolic Fuel &amp; Hydration Buffer</h2>
+    </div>
+    <div class="flex items-center gap-3 text-[10px] font-mono text-slate-400">
+      <span>POTABLE RESERVE: <strong class="text-cyan-300">1,420 L</strong></span>
+      <span class="text-slate-700">|</span>
+      <span>GREYWATER RECOVERY: <strong class="text-emerald-400">98.6% EFF</strong></span>
+    </div>
+  </div>
+
+  <!-- Daily Caloric Intake Table with compact high-density typography -->
+  <div class="overflow-hidden rounded-lg border border-slate-700/60 bg-slate-950/60 flex flex-col">
+    <div class="grid grid-cols-12 px-3 py-1.5 bg-slate-900/90 text-[10px] font-mono uppercase tracking-wider text-cyan-400/80 border-b border-slate-700/60">
+      <div class="col-span-2">MEAL ID</div>
+      <div class="col-span-3">RATION TYPE</div>
+      <div class="col-span-2 text-center">KCAL / HYDRATION</div>
+      <div class="col-span-3">LYOPHILIZED MICRONUTRIENT BLEND</div>
+      <div class="col-span-2 text-right">REORDER TRIGGER</div>
+    </div>
+    <div class="divide-y divide-slate-800/80 text-xs font-mono">
+      <!-- Meal 1 -->
+      <div class="grid grid-cols-12 px-3.5 py-2 items-center hover:bg-slate-900/40 transition-colors">
+        <div class="col-span-2 text-cyan-300 font-bold text-[11px]">RAT-B01</div>
+        <div class="col-span-3 text-white font-medium">Chia-Oat Porridge &amp; Blueberries</div>
+        <div class="col-span-2 text-center text-slate-200 text-[11px]">680 kcal • 300 ml</div>
+        <div class="col-span-3 text-slate-400 text-[11px]">Vit D3 (2000 IU), Magnesium Citrate 300mg</div>
+        <div class="col-span-2 text-right"><span class="text-emerald-400 font-semibold">142 DAYS (OK)</span></div>
+      </div>
+      <!-- Meal 2 -->
+      <div class="grid grid-cols-12 px-3.5 py-2 items-center hover:bg-slate-900/40 transition-colors">
+        <div class="col-span-2 text-cyan-300 font-bold text-[11px]">RAT-L04</div>
+        <div class="col-span-3 text-white font-medium">Lyophilized Teriyaki Salmon &amp; Rice</div>
+        <div class="col-span-2 text-center text-slate-200 text-[11px]">920 kcal • 450 ml</div>
+        <div class="col-span-3 text-slate-400 text-[11px]">Omega-3 EPA/DHA 1200mg, Potassium Iodide</div>
+        <div class="col-span-2 text-right"><span class="text-emerald-400 font-semibold">130 DAYS (OK)</span></div>
+      </div>
+      <!-- Meal 3 -->
+      <div class="grid grid-cols-12 px-3.5 py-2 items-center hover:bg-slate-900/40 transition-colors">
+        <div class="col-span-2 text-cyan-300 font-bold text-[11px]">RAT-D08</div>
+        <div class="col-span-3 text-white font-medium">Quinoa Vegetable Medley &amp; Tempeh</div>
+        <div class="col-span-2 text-center text-slate-200 text-[11px]">850 kcal • 350 ml</div>
+        <div class="col-span-3 text-slate-400 text-[11px]">Zinc Picolinate 25mg, B-Complex Complex</div>
+        <div class="col-span-2 text-right"><span class="text-emerald-400 font-semibold">118 DAYS (OK)</span></div>
+      </div>
+      <!-- Meal 4: Low Alert -->
+      <div class="grid grid-cols-12 px-3.5 py-2 items-center hover:bg-slate-900/40 transition-colors bg-amber-950/20">
+        <div class="col-span-2 text-amber-300 font-bold text-[11px]">RAT-E02</div>
+        <div class="col-span-3 text-amber-100 font-medium">Electrolyte Fluid Balance Packets</div>
+        <div class="col-span-2 text-center text-amber-200 text-[11px]">120 kcal • 500 ml</div>
+        <div class="col-span-3 text-slate-300 text-[11px]">Na+/K+ Osmotic Regulator, L-Theanine</div>
+        <div class="col-span-2 text-right"><span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-400/40">74 DAYS (REORDER)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sub-Panel: Hydroponic Fresh Greens & Spirulina Production -->
+  <div class="grid grid-cols-2 gap-3">
+    <div class="glass-panel-subtle rounded-lg p-2.5 border border-cyan-500/20 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-400/40 flex items-center justify-center text-emerald-400 font-bold text-xs">HYD</div>
+        <div>
+          <div class="text-xs font-orbitron font-semibold text-white">MICRO-GREENS HARVEST (TRAY 02)</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-0.5">Next yield scheduled for Sol 145 (+3 Sols)</div>
+        </div>
+      </div>
+      <span class="text-xs font-orbitron text-emerald-400 font-bold">+450g FRESH</span>
+    </div>
+
+    <div class="glass-panel-subtle rounded-lg p-2.5 border border-cyan-500/20 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-400/40 flex items-center justify-center text-cyan-400 font-bold text-xs">BIO</div>
+        <div>
+          <div class="text-xs font-orbitron font-semibold text-white">SPIRULINA BIO-REACTOR CELL</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-0.5">Harvest countdown: 12 Hours remaining</div>
+        </div>
+      </div>
+      <span class="text-xs font-orbitron text-cyan-300 font-bold">82% DENSITY</span>
+    </div>
+  </div>
+</section>
+
+<!-- Floating Top HUD Button -->
+<button id="hud-back-to-top" onclick="document.querySelector('main.hud-workspace-container').scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-12 right-6 z-20 px-3 py-1.5 rounded-full glass-panel border border-cyan-400/50 text-cyan-300 hover:text-white hover:bg-cyan-950/70 shadow-[0_0_12px_rgba(6,182,212,0.35)] font-orbitron text-[10px] font-semibold tracking-wider flex items-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer">
+  <span class="text-cyan-400 font-bold text-xs">↑</span>
+  <span>TOP</span>
+</button></main>
+
+  <!-- Bottom Telemetry Status Bar (Fixed 32px) -->
+  <!-- Standardized Floating Camera Monitor Trigger & Expandable Mood Panel -->
+<div class="fixed bottom-12 left-6 z-50 flex flex-col items-start gap-3">
+  <!-- Expandable Optical Mood Monitor Panel (hidden by default) -->
+  <div id="cosmo-cam-panel" class="hidden w-80 glass-panel rounded-2xl border border-sky-400/50 p-4 shadow-[0_0_35px_rgba(56,189,248,0.35)] backdrop-blur-2xl transition-all duration-300">
+    <!-- Panel Header -->
+    <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-cyan-500/25">
+      <div class="flex items-center gap-2">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+        </span>
+        <h3 class="font-orbitron text-xs font-bold tracking-wider text-white uppercase">OPTICAL MOOD MONITOR</h3>
+      </div>
+      <button id="cosmo-cam-close-btn" type="button" class="text-slate-400 hover:text-white transition-colors text-sm leading-none p-1 rounded-lg hover:bg-slate-800/60 cursor-pointer" aria-label="Close optical monitor">
+        ✕
+      </button>
+    </div>
+
+    <!-- 16:10 Video Feed Preview Container -->
+    <div class="relative w-full aspect-[16/10] rounded-lg overflow-hidden border border-cyan-500/40 bg-slate-950/90 flex items-center justify-center">
+      <!-- Simulated Optical Video Feed Visual -->
+      <div class="absolute inset-0 bg-gradient-to-tr from-cyan-950/50 via-slate-900/60 to-sky-950/40 opacity-80"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.15)_0%,transparent_70%)]"></div>
+
+      <!-- Reticle HUD Corners -->
+      <div class="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-sky-400/80 pointer-events-none"></div>
+      <div class="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-sky-400/80 pointer-events-none"></div>
+      <div class="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-sky-400/80 pointer-events-none"></div>
+      <div class="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-sky-400/80 pointer-events-none"></div>
+
+      <!-- Animated Scan Line -->
+      <div class="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-300 to-transparent shadow-[0_0_8px_#38bdf8] animate-pulse" style="top: 45%;"></div>
+
+      <!-- Video Feed Overlay Metadata -->
+      <div class="absolute top-2 left-3 text-[9px] font-mono text-cyan-300/80 tracking-wider flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> REC // CAM-HAB-01
+      </div>
+      <div class="absolute top-2 right-3 text-[9px] font-mono text-slate-400 tracking-wider">
+        30 FPS
+      </div>
+
+      <!-- Crew Face Outline & Focus Target -->
+      <div class="relative z-10 w-20 h-24 rounded-full border border-dashed border-sky-400/60 flex flex-col items-center justify-center backdrop-blur-[1px]">
+        <svg class="w-8 h-8 text-cyan-300/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+        <span class="text-[8px] font-mono text-cyan-300 font-semibold tracking-wider mt-1">TARGET LOCKED</span>
+      </div>
+
+      <!-- Live Telemetry Coordinates -->
+      <div class="absolute bottom-2 left-3 right-3 flex justify-between text-[8px] font-mono text-slate-400">
+        <span>PUPIL: 3.2mm</span>
+        <span class="text-cyan-300">MICRO-EXPRESSION: STABLE</span>
+      </div>
+    </div>
+
+    <!-- Detected Mood Badge -->
+    <div class="mt-3 p-2 rounded-lg bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between text-xs font-mono">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
+        <span class="text-slate-200 font-medium text-[11px]">STATUS: <strong class="text-emerald-300">OPTIMAL / FOCUSED</strong></span>
+      </div>
+      <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-400/40">CONF: 94%</span>
+    </div>
+
+    <!-- On-Device Privacy Caption -->
+    <div class="mt-2 text-center text-[9px] font-mono text-slate-400 tracking-tight">
+      On-device processing • Video never uploaded
+    </div>
+  </div>
+
+  <!-- 60px x 60px Circular Light Blue Camera Monitor Trigger Button -->
+  <button id="cosmo-cam-trigger" type="button" class="relative group flex items-center justify-center rounded-full bg-slate-950/80 backdrop-blur-xl border-2 border-sky-400/70 hover:border-sky-300 cursor-pointer transition-all duration-300 active:scale-95" style="width: 60px; height: 60px; box-shadow: 0 0 25px rgba(56, 189, 248, 0.6), 0 0 45px rgba(0, 240, 255, 0.35);" aria-label="Toggle Optical Mood Monitor">
+    <!-- Video Camera SVG Icon -->
+    <svg class="w-7 h-7 text-[#7dd3fc] group-hover:scale-110 transition-transform duration-200" style="filter: drop-shadow(0 0 8px #00f0ff);" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M17 10.5V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-3.5l4 4v-11l-4 4z"></path>
+    </svg>
+    <!-- Pulsating live optical beacon dot at top right -->
+    <span class="absolute top-1 right-1 flex h-3 w-3">
+      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-400 border border-slate-950 shadow-[0_0_8px_#34d399]"></span>
+    </span>
+  </button>
+</div>
+
+<script id="cosmo-cam-panel-controller">
+(function() {
+  const trigger = document.getElementById('cosmo-cam-trigger');
+  const panel = document.getElementById('cosmo-cam-panel');
+  const closeBtn = document.getElementById('cosmo-cam-close-btn');
+
+  if (trigger && panel) {
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.classList.toggle('hidden');
+    });
+  }
+
+  if (closeBtn && panel) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.classList.add('hidden');
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (panel && trigger && !panel.classList.contains('hidden')) {
+      if (!panel.contains(e.target) && !trigger.contains(e.target)) {
+        panel.classList.add('hidden');
+      }
+    }
+  });
+})();
+</script><footer class="relative z-20 w-full px-6 py-2 border-t border-cyan-500/20 bg-slate-950/90 backdrop-blur-md flex items-center justify-between text-[10px] font-mono text-slate-400">
+    <div class="flex items-center gap-4">
+      <span class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-dot"></span>
+        <span class="text-slate-300 font-medium">CORE AUTONOMY:</span>
+        <span class="text-cyan-300 font-semibold">OPTIMAL</span>
+      </span>
+      <span class="text-slate-700">|</span>
+      <span class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span class="text-slate-300 font-medium">CIRCADIAN SYNC:</span>
+        <span class="text-emerald-300 font-semibold">ACTIVE (MELATONIN LOCK)</span>
+      </span>
+      <span class="text-slate-700">|</span>
+      <span class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+        <span class="text-slate-300 font-medium">SUPPLY CHAIN:</span>
+        <span class="text-cyan-300 font-semibold">NOMINAL</span>
+      </span>
+    </div>
+
+    <div class="flex items-center gap-3 text-slate-400">
+      <span>EXPEDITION 73 // MARS CRUISE</span>
+      <span class="text-slate-700">|</span>
+      <span class="text-cyan-400 font-semibold">CC-SLP-RAT // V4.8.2</span>
+    </div>
+  </footer>
+
+  <!-- Interactivity Script -->
+  <script>
+    // Live UTC Clock updater
+    function updateClock() {
+      const now = new Date();
+      const hrs = String(now.getUTCHours()).padStart(2, '0');
+      const mins = String(now.getUTCMinutes()).padStart(2, '0');
+      const secs = String(now.getUTCSeconds()).padStart(2, '0');
+      const clockEl = document.getElementById('live-utc-clock');
+      if (clockEl) clockEl.textContent = `${hrs}:${mins}:${secs} UTC`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Master light switch toggle
+    const toggleLightBtn = document.getElementById('toggle-light-master');
+    const toggleKnob = document.getElementById('toggle-light-knob');
+    const lightStatusText = document.getElementById('light-master-status');
+    const dimmerSlider = document.getElementById('light-dimmer-slider');
+    const sliderValReadout = document.getElementById('slider-val-readout');
+    const kpiIntensityVal = document.getElementById('kpi-intensity-val');
+    let lightState = true;
+
+    toggleLightBtn.addEventListener('click', () => {
+      lightState = !lightState;
+      if (lightState) {
+        toggleLightBtn.className = "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-cyan-400/50 bg-cyan-600 transition-colors duration-200 ease-in-out focus:outline-none";
+        toggleKnob.className = "translate-x-4 inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out";
+        lightStatusText.textContent = "STATE: ON";
+        lightStatusText.className = "text-[10px] font-mono text-cyan-300 font-semibold";
+        dimmerSlider.disabled = false;
+        sliderValReadout.textContent = dimmerSlider.value + '%';
+        kpiIntensityVal.textContent = dimmerSlider.value + '%';
+      } else {
+        toggleLightBtn.className = "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-slate-700 bg-slate-800 transition-colors duration-200 ease-in-out focus:outline-none";
+        toggleKnob.className = "translate-x-0 inline-block h-4 w-4 transform rounded-full bg-slate-400 shadow-md transition duration-200 ease-in-out";
+        lightStatusText.textContent = "STATE: OFF";
+        lightStatusText.className = "text-[10px] font-mono text-slate-500 font-semibold";
+        dimmerSlider.disabled = true;
+        sliderValReadout.textContent = '0%';
+        kpiIntensityVal.textContent = '0%';
+      }
+    });
+
+    // Dimmer slider listener
+    dimmerSlider.addEventListener('input', (e) => {
+      if (!lightState) return;
+      const val = e.target.value;
+      sliderValReadout.textContent = `${val}%`;
+      kpiIntensityVal.textContent = `${val}%`;
+    });
+
+    // Spectral mode pills
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        modeButtons.forEach(b => {
+          b.classList.remove('border-cyan-400/70', 'bg-cyan-950/70', 'text-cyan-200', 'shadow-[0_0_12px_rgba(6,182,212,0.25)]');
+          b.classList.add('border-slate-700/60', 'bg-slate-900/60', 'text-slate-300');
+        });
+        btn.classList.add('border-cyan-400/70', 'bg-cyan-950/70', 'text-cyan-200', 'shadow-[0_0_12px_rgba(6,182,212,0.25)]');
+        btn.classList.remove('border-slate-700/60', 'bg-slate-900/60', 'text-slate-300');
+        
+        const targetVal = btn.getAttribute('data-val');
+        if (lightState) {
+          dimmerSlider.value = targetVal;
+          sliderValReadout.textContent = `${targetVal}%`;
+          kpiIntensityVal.textContent = `${targetVal}%`;
+        }
+      });
+    });
+
+    // Sleep Session actions
+    const btnStartSleep = document.getElementById('btn-start-sleep');
+    const btnConfirmWake = document.getElementById('btn-confirm-wake');
+    const toastEl = document.getElementById('inventory-toast');
+    const toastText = document.getElementById('toast-text');
+
+    function showToast(msg) {
+      if (toastText) toastText.textContent = msg;
+      if (toastEl) {
+        toastEl.classList.add('border-cyan-400', 'bg-cyan-950/90');
+        setTimeout(() => {
+          toastEl.classList.remove('border-cyan-400', 'bg-cyan-950/90');
+        }, 3000);
+      }
+    }
+
+    btnStartSleep.addEventListener('click', () => {
+      showToast('POD 03: SLEEP CYCLE INITIATED // NOISE ATTENUATION AT 98% // 2700K MELATONIN LOCK');
+    });
+
+    btnConfirmWake.addEventListener('click', () => {
+      showToast('WAKE PROTOCOL CONFIRMED // CIRCADIAN LUX RAMP INITIATED // BIOMETRICS SYNCED');
+    });
+
+    // Ration Stepper & Logger
+    const stepperMinus = document.getElementById('stepper-minus');
+    const stepperPlus = document.getElementById('stepper-plus');
+    const stepperVal = document.getElementById('stepper-val');
+    const btnDeductLog = document.getElementById('btn-deduct-log');
+    const rationSelect = document.getElementById('ration-select-item');
+
+    let currentQty = 1.0;
+
+    stepperMinus.addEventListener('click', () => {
+      if (currentQty > 0.5) {
+        currentQty = Math.max(0.5, currentQty - 0.5);
+        stepperVal.textContent = currentQty.toFixed(1);
+      }
+    });
+
+    stepperPlus.addEventListener('click', () => {
+      if (currentQty < 10) {
+        currentQty += 0.5;
+        stepperVal.textContent = currentQty.toFixed(1);
+      }
+    });
+
+    btnDeductLog.addEventListener('click', () => {
+      const selectedItem = rationSelect.value;
+      showToast(`LOGGED: -${currentQty.toFixed(1)} OF ${selectedItem.toUpperCase()} // INVENTORY DATABASE UPDATED`);
+    });
+
+    // Cross-page navigation events
+    document.getElementById('nav-brand-logo').addEventListener('click', (e) => {
+      e.preventDefault();
+      // Navigate to Home
+      window.parent.postMessage({ type: 'navigate_to', target_screen: '{{DATA:SCREEN:SCREEN_8}}' }, '*');
+    });
+    document.getElementById('tab-home').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.parent.postMessage({ type: 'navigate_to', target_screen: '{{DATA:SCREEN:SCREEN_8}}' }, '*');
+    });
+    document.getElementById('tab-devices').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.parent.postMessage({ type: 'navigate_to', target_screen: '{{DATA:SCREEN:SCREEN_3}}' }, '*');
+    });
+    document.getElementById('tab-stats').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.parent.postMessage({ type: 'navigate_to', target_screen: '{{DATA:SCREEN:SCREEN_6}}' }, '*');
+    });
+    document.getElementById('tab-security').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.parent.postMessage({ type: 'navigate_to', target_screen: '{{DATA:SCREEN:SCREEN_1}}' }, '*');
+    });
+  </script>
+
+
+
+
+
+
+
+
+<script id="hud-nav-controller">
+  (function() {
+    const currentTabIndex = 4; // Screen 3: Sleep & Rations (Index 4)
+    const workspace = document.querySelector('.hud-workspace-container');
+    const scanLine = document.getElementById('hud-scan-line');
+
+    // Check incoming navigation direction
+    const prevIdx = sessionStorage.getItem('cosmo_prev_tab_index');
+    if (prevIdx !== null && workspace) {
+      const p = parseInt(prevIdx, 10);
+      if (!isNaN(p) && p !== currentTabIndex) {
+        const fromOffset = currentTabIndex > p ? '24px' : '-24px';
+        workspace.style.setProperty('--glide-from-x', fromOffset);
+        workspace.classList.add('hud-workspace-incoming');
+        if (scanLine) {
+          scanLine.classList.add('active');
+        }
+      }
+    }
+    sessionStorage.setItem('cosmo_prev_tab_index', currentTabIndex.toString());
+
+    function navigateWithHUD(targetScreen, targetIndex) {
+      sessionStorage.setItem('cosmo_prev_tab_index', currentTabIndex.toString());
+      if (!workspace) {
+        window.parent.postMessage({ type: 'navigate_to', target_screen: targetScreen }, '*');
+        return;
+      }
+      if (scanLine) {
+        scanLine.classList.remove('active');
+        void scanLine.offsetWidth;
+        scanLine.classList.add('active');
+      }
+      const exitClass = targetIndex < currentTabIndex ? 'hud-workspace-outgoing-right' : 'hud-workspace-outgoing-left';
+      workspace.classList.remove('hud-workspace-incoming');
+      workspace.classList.add(exitClass);
+      setTimeout(() => {
+        window.parent.postMessage({ type: 'navigate_to', target_screen: targetScreen }, '*');
+      }, 200);
+    }
+
+    const brandLogo = document.getElementById('nav-brand-logo');
+    if (brandLogo) {
+      brandLogo.onclick = function(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        navigateWithHUD('{{DATA:SCREEN:SCREEN_12}}', 0);
+      };
+    }
+
+    const tabHome = document.getElementById('tab-home');
+    if (tabHome) {
+      tabHome.onclick = function(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        navigateWithHUD('{{DATA:SCREEN:SCREEN_12}}', 0);
+      };
+    }
+
+    const tabDevices = document.getElementById('tab-devices');
+    if (tabDevices) {
+      tabDevices.onclick = function(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        navigateWithHUD('{{DATA:SCREEN:SCREEN_7}}', 1);
+      };
+    }
+
+    const tabStats = document.getElementById('tab-stats');
+    if (tabStats) {
+      tabStats.onclick = function(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        navigateWithHUD('{{DATA:SCREEN:SCREEN_10}}', 2);
+      };
+    }
+
+    const tabSecurity = document.getElementById('tab-security');
+    if (tabSecurity) {
+      tabSecurity.onclick = function(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        navigateWithHUD('{{DATA:SCREEN:SCREEN_5}}', 3);
+      };
+    }
+  })();
+</script>
+
+
+
+
+
+
+
+<script id="notification-drawer-interactive-script">(function() { const trigger = document.getElementById('btn-notification-trigger'); const drawer = document.getElementById('notification-drawer'); const badge = document.getElementById('notif-badge'); const markReadBtn = document.getElementById('btn-mark-all-read'); if (trigger && drawer) { trigger.addEventListener('click', (e) => { e.stopPropagation(); drawer.classList.toggle('hidden'); }); document.addEventListener('click', (e) => { if (!drawer.contains(e.target) && !trigger.contains(e.target)) { drawer.classList.add('hidden'); } }); } if (markReadBtn && badge) { markReadBtn.addEventListener('click', () => { badge.style.display = 'none'; markReadBtn.textContent = 'ALL READ'; markReadBtn.classList.add('text-slate-500'); }); } })();</script>
+
+
+
+
+
+</body></html>

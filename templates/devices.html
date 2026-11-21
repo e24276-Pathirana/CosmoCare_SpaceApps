@@ -1,0 +1,893 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cosmo Care - My Devices &amp; Habitat Modules</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&amp;family=Orbitron:wght@400;500;600;700;800;900&amp;family=Share+Tech+Mono&amp;display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            orbitron: ['Orbitron', 'sans-serif'],
+            montserrat: ['Montserrat', 'sans-serif'],
+            mono: ['Share Tech Mono', 'monospace'],
+          },
+          colors: {
+            cosmo: {
+              obsidian: '#030712',
+              card: 'rgba(8, 15, 29, 0.72)',
+              cardBorder: 'rgba(56, 189, 248, 0.22)',
+              cyan: '#00f0ff',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              red: '#ef4444',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      background-color: #030712;
+      color: #e2e8f0;
+      font-family: 'Montserrat', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Ambient Nebula Background */
+    .nebula-bg {
+      background-image: 
+        radial-gradient(circle at 50% 40%, rgba(3, 7, 18, 0.52) 0%, rgba(3, 7, 18, 0.78) 75%, rgba(3, 7, 18, 0.94) 100%),
+        url('https://lh3.googleusercontent.com/aida-public/AB6AXuBhP2ND_Bggkrts-amEDY6Jvz5Hsx_h0lzBh_nSnKQ7PcICfZ2nm34X7ksNUy_fqv3R_RyVgaR9LFO3zVFsEPT-EUxVGIhAyPiafqjI1RIeWOLj-J11GkCkzpwIm1VZ9fIjkUUNJkMt9KJ1lHsVK8RKMiEU5UWz6e8S4wLLnVa5ABNUzkzHk365rbs5gHahA3796zqlIkYs2-szmDi5HA7jq5RAww0hg43Crxjq3RzQfeCXzquIRDMOkw');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* Glass Panels */
+    .glass-panel {
+      background: rgba(8, 16, 32, 0.68);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(6, 182, 212, 0.05);
+    }
+
+    .glass-panel-sub {
+      background: rgba(13, 24, 46, 0.55);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+    }
+
+    .glass-hover:hover {
+      border-color: rgba(0, 240, 255, 0.5);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.2), inset 0 0 14px rgba(0, 240, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    /* Glowing Accents */
+    .glow-cyan {
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.45);
+    }
+    .glow-cyan-text {
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.65);
+    }
+    .glow-emerald-text {
+      text-shadow: 0 0 10px rgba(16, 185, 129, 0.65);
+    }
+
+    /* Pulse animation */
+    @keyframes beacon-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 6px #00f0ff); }
+      50% { opacity: 0.4; transform: scale(0.85); filter: drop-shadow(0 0 2px #00f0ff); }
+    }
+    .animate-beacon {
+      animation: beacon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Custom Switch Toggle */
+    .toggle-track {
+      transition: all 0.25s ease;
+    }
+    .toggle-thumb {
+      transition: transform 0.25s ease;
+    }
+    .toggle-active .toggle-track {
+      background-color: rgba(6, 182, 212, 0.35);
+      border-color: #00f0ff;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+    }
+    .toggle-active .toggle-thumb {
+      transform: translateX(18px);
+      background-color: #00f0ff;
+      box-shadow: 0 0 8px #00f0ff;
+    }
+
+    /* Custom range slider styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: rgba(30, 41, 59, 0.8);
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #00f0ff;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00f0ff;
+      border: 1px solid #ffffff;
+    }
+
+    /* Subtle grid line accents */
+    .editorial-grid-v {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.08) 0%, rgba(56, 189, 248, 0.02) 100%);
+      pointer-events: none;
+    }
+  </style>
+<style>
+  main::-webkit-scrollbar {
+    width: 6px;
+  }
+  main::-webkit-scrollbar-track {
+    background: rgba(3, 7, 18, 0.4);
+  }
+  main::-webkit-scrollbar-thumb {
+    background: rgba(0, 240, 255, 0.25);
+    border-radius: 3px;
+  }
+  main::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 240, 255, 0.5);
+  }
+</style></head>
+<body class="nebula-bg flex flex-col justify-between p-4 relative antialiased selection:bg-cyan-500/30 selection:text-cyan-200 page-enter">
+
+  <!-- Background decorative grid lines -->
+  <div class="editorial-grid-v left-[24%]"></div>
+  <div class="editorial-grid-v left-[52%]"></div>
+  <div class="editorial-grid-v left-[76%]"></div>
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="w-full flex items-center justify-between px-5 py-2.5 glass-panel rounded-xl z-20 shrink-0">
+    <!-- Top-Left: Logo with Medical Cross -->
+    <a href="{{DATA:SCREEN:SCREEN_12}}" id="nav-brand-logo" class="flex items-center gap-3.5 group cursor-pointer transition-transform hover:scale-[1.01]">
+      <div class="w-9 h-9 rounded-lg bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.35)] group-hover:border-cyan-300">
+        <!-- 4x thick medical cross -->
+        <svg class="w-5 h-5 text-cyan-400 filter drop-shadow-[0_0_6px_rgba(0,240,255,0.8)]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z"></path>
+        </svg>
+      </div>
+      <div class="flex flex-col">
+        <div class="flex items-center tracking-[0.22em] font-orbitron font-extrabold text-lg leading-tight text-white group-hover:text-cyan-100 transition-colors">
+          <span>COSMO</span>
+          <span class="text-cyan-400 ml-1.5 drop-shadow-[0_0_8px_rgba(0,240,255,0.7)]">CARE</span>
+        </div>
+        <span class="text-[9px] font-mono tracking-[0.28em] text-slate-400 font-medium">HEALTHCARE BEYOND EARTH</span>
+      </div>
+    </a>
+
+    <!-- Top-Center Expanding Dock (5 pills) -->
+    <nav class="flex items-center gap-1.5 bg-slate-950/70 p-1.5 rounded-full border border-cyan-500/25 shadow-[0_0_20px_rgba(0,0,0,0.6)]">
+      <!-- 01 HOME -->
+      <a href="{{DATA:SCREEN:SCREEN_12}}" id="nav-btn-home" class="px-3.5 py-1.5 rounded-full text-[11px] font-orbitron tracking-wider text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60 transition-all flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+        <span>01 HOME</span>
+      </a>
+
+      <!-- 02 MY DEVICES & HABITAT MODULES (ACTIVE) -->
+      <a href="{{DATA:SCREEN:SCREEN_5}}" class="px-4 py-1.5 rounded-full text-[11px] font-orbitron font-semibold tracking-wider text-cyan-200 bg-cyan-950/90 border border-cyan-400/70 shadow-[0_0_18px_rgba(0,240,255,0.45)] transition-all flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-beacon"></span>
+        <span class="glow-cyan-text">02 DEVICES &amp; HABITAT</span>
+      </a>
+
+      <!-- 03 STATISTICS & TRIAGE -->
+      <a href="{{DATA:SCREEN:SCREEN_10}}" id="nav-btn-statistics" class="px-3.5 py-1.5 rounded-full text-[11px] font-orbitron tracking-wider text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60 transition-all flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+        <span>03 STATISTICS &amp; TRIAGE</span>
+      </a>
+
+      <!-- 04 SECURITY & ALERTS -->
+      <a href="{{DATA:SCREEN:SCREEN_5}}" id="nav-btn-security" class="px-3.5 py-1.5 rounded-full text-[11px] font-orbitron tracking-wider text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60 transition-all flex items-center gap-1.5 opacity-80 cursor-pointer"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span><span>04 SECURITY &amp; ALERTS</span></a>
+
+      <!-- 05 LIGHTS, SLEEP & RATIONS -->
+      <a href="{{DATA:SCREEN:SCREEN_3}}" id="nav-btn-sleep-rations" class="px-3.5 py-1.5 rounded-full text-[11px] font-orbitron tracking-wider text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60 transition-all flex items-center gap-1.5 opacity-80 cursor-pointer"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span><span>05 SLEEP &amp; RATIONS</span></a>
+    </nav>
+
+    <!-- Top-Right: Crew Status & Cabin Atmosphere Readout -->
+    <div class="flex items-center gap-3"><!-- Notification Bell Trigger & Interactive Drawer --><div class="relative"><button id="notif-bell-btn" onclick="toggleNotifDrawer()" class="relative w-9 h-9 rounded-lg bg-slate-900/80 border border-cyan-500/30 flex items-center justify-center text-cyan-300 hover:text-white hover:border-cyan-400 hover:bg-cyan-500/20 transition-all interactive-icon cursor-pointer shadow-[0_0_12px_rgba(0,240,255,0.15)]" title="Habitat Security &amp; Medical Notifications"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg><span id="notif-ping" class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] border border-slate-900/60 animate-pulse"></span></button><!-- Glassmorphic Notification Drawer --><div id="notif-drawer" class="hidden absolute right-0 top-12 w-84 md:w-96 rounded-2xl glass-panel p-3.5 border border-cyan-400/40 z-50 text-left shadow-[0_16px_40px_rgba(0,0,0,0.85),0_0_25px_rgba(0,240,255,0.2)]"><div class="flex items-center justify-between pb-2 border-b border-cyan-500/20"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f0ff]"></span><span class="font-orbitron text-xs font-bold text-white tracking-wider">HABITAT ALERTS FEED</span><span id="notif-unread-count" class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">4 ACTIVE</span></div><button onclick="markAllRead()" class="text-[9px] font-mono text-cyan-400 hover:text-white uppercase tracking-wider transition-colors">Mark All Read</button></div><div class="space-y-2 py-2 max-h-[50vh] overflow-y-auto text-xs font-mono"><a href="{{DATA:SCREEN:SCREEN_5}}" class="block p-2 rounded-lg bg-amber-950/30 border border-amber-500/40 hover:border-amber-400 transition-colors"><div class="flex items-center justify-between"><span class="text-amber-300 font-bold text-[10px] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>SOLAR FLUX ELEVATION</span><span class="text-[9px] text-slate-400">08:42 UTC</span></div><p class="text-[10px] text-slate-300 mt-1">Dorsal radiation sensor elevated (+0.12 mSv/h). Deflection active.</p></a><a href="{{DATA:SCREEN:SCREEN_10}}" class="block p-2 rounded-lg bg-cyan-950/30 border border-cyan-500/40 hover:border-cyan-400 transition-colors"><div class="flex items-center justify-between"><span class="text-cyan-300 font-bold text-[10px] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>HEMODYNAMIC STABILIZATION</span><span class="text-[9px] text-slate-400">T-18 MIN</span></div><p class="text-[10px] text-slate-300 mt-1">Crew A004 RMSSD calibrated at 47.4 ms; orthostatic tone nominal.</p></a><a href="{{DATA:SCREEN:SCREEN_5}}" class="block p-2 rounded-lg bg-slate-900/60 border border-cyan-500/20 hover:border-cyan-400 transition-colors"><div class="flex items-center justify-between"><span class="text-slate-200 font-bold text-[10px] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>CO₂ SCRUBBER CYCLE 02</span><span class="text-[9px] text-slate-400">07:15 UTC</span></div><p class="text-[10px] text-slate-300 mt-1">Galley CO₂ level normalized to 987 ppm. Scrubbers nominal.</p></a><a href="{{DATA:SCREEN:SCREEN_3}}" class="block p-2 rounded-lg bg-slate-900/60 border border-cyan-500/20 hover:border-cyan-400 transition-colors"><div class="flex items-center justify-between"><span class="text-amber-300 font-bold text-[10px] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>ELECTROLYTE RESERVES LOW</span><span class="text-[9px] text-slate-400">SOL 142</span></div><p class="text-[10px] text-slate-300 mt-1">74 Days remaining (112 sachets). Reorder scheduled.</p></a></div><div class="pt-2 border-t border-cyan-500/20 flex items-center justify-between text-[9px] font-mono text-slate-400"><span>DEEP SPACE TELEMETRY SYNCED</span><button onclick="toggleNotifDrawer()" class="text-cyan-400 hover:text-white">CLOSE</button></div></div></div><!-- Crew Profile Button (links to SCREEN_1: Crew Profile & Media Vault) --><a href="{{DATA:SCREEN:SCREEN_1}}" id="crew-profile-link" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400 hover:bg-cyan-950/40 transition-all text-right group cursor-pointer shadow-[0_0_12px_rgba(0,240,255,0.15)]"><span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span><div class="flex flex-col"><span class="text-[11px] font-orbitron font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors">DR. SARAH MITCHELL</span><span class="text-[9px] font-mono tracking-widest text-cyan-400">CREW ID: A004 • FLIGHT SURGEON</span></div></a><!-- Cabin Pressure --><div class="px-3 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-400/30 flex flex-col justify-center items-end"><span class="text-[9px] font-mono text-slate-400 tracking-wider">ATMOSPHERE</span><span class="text-[11px] font-orbitron font-bold text-cyan-300">CABIN: 101.3 kPa</span></div></div>
+  </header>
+
+  <!-- ================= MAIN CONTENT SPLIT (52% Left / 48% Right) ================= -->
+  <main class="w-full flex-1 grid grid-cols-12 gap-4 my-3 min-h-0 z-10 overflow-y-auto">
+
+    <!-- ================= LEFT COLUMN: LIFE SUPPORT & DEVICES (52% = col-span-6 or 7, using col-span-6 / col-span-6 or 6.5) ================= -->
+    <section class="col-span-6 flex flex-col gap-3">
+      
+      <!-- Section Header -->
+      <div class="flex items-center justify-between px-1 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="w-1.5 h-4 bg-cyan-400 rounded-sm shadow-[0_0_8px_#00f0ff]"></span>
+          <h2 class="font-orbitron font-bold text-sm tracking-widest text-white flex items-center gap-2">
+            LIFE SUPPORT &amp; CRITICAL DEVICES
+            <span class="text-[10px] font-mono text-cyan-400/80 font-normal px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-400/30">MODULE // 02</span>
+          </h2>
+        </div>
+        <div class="flex items-center gap-3 text-[10px] font-mono text-slate-400">
+          <span class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 4 ONLINE
+          </span>
+          <span class="text-slate-600">|</span>
+          <span class="text-cyan-400">BUS VOLTAGE: 28.4V NOMINAL</span>
+        </div>
+      </div>
+
+      <!-- 2x2 Interactive Device Cards Grid (Flex-1 to fill height) -->
+      <div class="grid grid-cols-2 gap-3 flex-1 min-h-0">
+
+        <!-- Card 1: CO2 Scrubber -->
+        <div class="glass-panel rounded-xl p-3.5 flex flex-col justify-between border-cyan-500/20 glass-hover transition-all relative overflow-hidden group">
+          <div class="absolute -top-12 -right-12 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all pointer-events-none"></div>
+          
+          <!-- Card Top -->
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-cyan-950/70 border border-cyan-400/30 flex items-center justify-center text-cyan-400 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="wind" class="lucide lucide-wind w-4 h-4"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"></path><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"></path><path d="M9.8 4.4A2 2 0 1 1 11 8H2"></path></svg>
+              </div>
+              <div>
+                <h3 class="font-orbitron font-bold text-xs text-white tracking-wider">CO₂ SCRUBBER</h3>
+                <span class="text-[9px] font-mono text-slate-400 tracking-wide">AVS-SECONDARY CYCLE</span>
+              </div>
+            </div>
+            <!-- Status Badge -->
+            <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-emerald-950/70 border border-emerald-400/50 text-emerald-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
+              NOMINAL
+            </span>
+          </div>
+
+          <!-- Live Readout / Visual Metrics -->
+          <div class="my-1.5 py-2 px-3 rounded-lg bg-slate-950/60 border border-cyan-500/15">
+            <div class="flex items-baseline justify-between">
+              <span class="text-[10px] font-mono text-slate-400">PARTIAL PRESSURE</span>
+              <span class="font-orbitron font-extrabold text-lg text-cyan-300 tracking-wide glow-cyan-text">987.4 <span class="text-[11px] font-mono text-slate-400 font-normal">ppm</span></span>
+            </div>
+            <!-- Progress Mini Bar -->
+            <div class="w-full bg-slate-800/80 h-1.5 rounded-full mt-1.5 overflow-hidden flex">
+              <div class="bg-cyan-400 h-full w-[42%] rounded-full shadow-[0_0_6px_#00f0ff]"></div>
+            </div>
+            <div class="flex justify-between text-[8px] font-mono text-slate-500 mt-1">
+              <span>SAFE TARGET: &lt;1,200 ppm</span>
+              <span class="text-cyan-400">EFFICIENCY: 99.4%</span>
+            </div>
+          </div>
+
+          <!-- Bottom Control: Power Toggle -->
+          <div class="flex items-center justify-between pt-1 border-t border-cyan-500/10">
+            <span class="text-[10px] font-mono text-slate-300 tracking-wider">SYSTEM POWER</span>
+            <div class="flex items-center gap-2 cursor-pointer toggle-control toggle-active" onclick="toggleSwitch(this)">
+              <span class="text-[9px] font-orbitron font-bold text-cyan-400 toggle-label">ON</span>
+              <div class="w-10 h-5 rounded-full border border-cyan-500/40 bg-slate-900/80 p-0.5 flex items-center toggle-track">
+                <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 toggle-thumb shadow-[0_0_6px_#00f0ff]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Biometric Monitor -->
+        <div class="glass-panel rounded-xl p-3.5 flex flex-col justify-between border-cyan-500/20 glass-hover transition-all relative overflow-hidden group">
+          <div class="absolute -top-12 -right-12 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all pointer-events-none"></div>
+          
+          <!-- Card Top -->
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-cyan-950/70 border border-cyan-400/30 flex items-center justify-center text-cyan-400 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="activity" class="lucide lucide-activity w-4 h-4"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"></path></svg>
+              </div>
+              <div>
+                <h3 class="font-orbitron font-bold text-xs text-white tracking-wider">BIOMETRIC MONITOR</h3>
+                <span class="text-[9px] font-mono text-slate-400 tracking-wide">CREW CONTINUOUS HUB</span>
+              </div>
+            </div>
+            <!-- Status Badge -->
+            <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-cyan-950/70 border border-cyan-400/50 text-cyan-300 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f0ff] animate-pulse"></span>
+              ACTIVE
+            </span>
+          </div>
+
+          <!-- Live Readout / Visual Metrics -->
+          <div class="my-1.5 py-2 px-3 rounded-lg bg-slate-950/60 border border-cyan-500/15">
+            <div class="flex items-baseline justify-between">
+              <span class="text-[10px] font-mono text-slate-400">HRV (RMSSD)</span>
+              <span class="font-orbitron font-extrabold text-lg text-emerald-300 tracking-wide glow-emerald-text">47.4 <span class="text-[11px] font-mono text-slate-400 font-normal">ms</span></span>
+            </div>
+            <!-- Wave Mini Graphic -->
+            <div class="flex items-center justify-between text-[9px] font-mono text-cyan-400 mt-1">
+              <span class="flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="radio" class="lucide lucide-radio w-3 h-3 text-cyan-400"><path d="M16.247 7.761a6 6 0 0 1 0 8.478"></path><path d="M19.075 4.933a10 10 0 0 1 0 14.134"></path><path d="M4.925 19.067a10 10 0 0 1 0-14.134"></path><path d="M7.753 16.239a6 6 0 0 1 0-8.478"></path><circle cx="12" cy="12" r="2"></circle></svg>
+                ECG SYNCED • LEAD II
+              </span>
+              <span class="text-slate-400">CHANNELS: 6/6</span>
+            </div>
+          </div>
+
+          <!-- Bottom Control: Power Toggle -->
+          <div class="flex items-center justify-between pt-1 border-t border-cyan-500/10">
+            <span class="text-[10px] font-mono text-slate-300 tracking-wider">SYSTEM POWER</span>
+            <div class="flex items-center gap-2 cursor-pointer toggle-control toggle-active" onclick="toggleSwitch(this)">
+              <span class="text-[9px] font-orbitron font-bold text-cyan-400 toggle-label">ON</span>
+              <div class="w-10 h-5 rounded-full border border-cyan-500/40 bg-slate-900/80 p-0.5 flex items-center toggle-track">
+                <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 toggle-thumb shadow-[0_0_6px_#00f0ff]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Water Recycler -->
+        <div class="glass-panel rounded-xl p-3.5 flex flex-col justify-between border-cyan-500/20 glass-hover transition-all relative overflow-hidden group">
+          <div class="absolute -top-12 -right-12 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all pointer-events-none"></div>
+          
+          <!-- Card Top -->
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-cyan-950/70 border border-cyan-400/30 flex items-center justify-center text-cyan-400 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="droplets" class="lucide lucide-droplets w-4 h-4"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"></path><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"></path></svg>
+              </div>
+              <div>
+                <h3 class="font-orbitron font-bold text-xs text-white tracking-wider">WATER RECYCLER</h3>
+                <span class="text-[9px] font-mono text-slate-400 tracking-wide">WRS CATALYTIC LOOP</span>
+              </div>
+            </div>
+            <!-- Status Badge -->
+            <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-emerald-950/70 border border-emerald-400/50 text-emerald-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
+              OPTIMAL
+            </span>
+          </div>
+
+          <!-- Live Readout / Visual Metrics -->
+          <div class="my-1.5 py-2 px-3 rounded-lg bg-slate-950/60 border border-cyan-500/15">
+            <div class="flex items-baseline justify-between">
+              <span class="text-[10px] font-mono text-slate-400">RECOVERY RATE</span>
+              <span class="font-orbitron font-extrabold text-lg text-cyan-300 tracking-wide glow-cyan-text">98.2% <span class="text-[10px] font-mono text-slate-400 font-normal">EFF</span></span>
+            </div>
+            <!-- Progress Mini Bar -->
+            <div class="w-full bg-slate-800/80 h-1.5 rounded-full mt-1.5 overflow-hidden flex">
+              <div class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full w-[98.2%] rounded-full shadow-[0_0_6px_#10b981]"></div>
+            </div>
+            <div class="flex justify-between text-[8px] font-mono text-slate-500 mt-1">
+              <span>2.5 L DAILY QUOTA</span>
+              <span class="text-emerald-400">POTABLE: STERILIZED</span>
+            </div>
+          </div>
+
+          <!-- Bottom Control: Power Toggle -->
+          <div class="flex items-center justify-between pt-1 border-t border-cyan-500/10">
+            <span class="text-[10px] font-mono text-slate-300 tracking-wider">SYSTEM POWER</span>
+            <div class="flex items-center gap-2 cursor-pointer toggle-control toggle-active" onclick="toggleSwitch(this)">
+              <span class="text-[9px] font-orbitron font-bold text-cyan-400 toggle-label">ON</span>
+              <div class="w-10 h-5 rounded-full border border-cyan-500/40 bg-slate-900/80 p-0.5 flex items-center toggle-track">
+                <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 toggle-thumb shadow-[0_0_6px_#00f0ff]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Circadian Lamp -->
+        <div class="glass-panel rounded-xl p-3.5 flex flex-col justify-between border-cyan-500/20 glass-hover transition-all relative overflow-hidden group">
+          <div class="absolute -top-12 -right-12 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all pointer-events-none"></div>
+          
+          <!-- Card Top -->
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-cyan-950/70 border border-cyan-400/30 flex items-center justify-center text-cyan-400 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="sun" class="lucide lucide-sun w-4 h-4"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+              </div>
+              <div>
+                <h3 class="font-orbitron font-bold text-xs text-white tracking-wider">CIRCADIAN LAMP</h3>
+                <span class="text-[9px] font-mono text-slate-400 tracking-wide">SPECTRAL BIO-LIGHTING</span>
+              </div>
+            </div>
+            <!-- Mode Badge -->
+            <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-amber-950/70 border border-amber-400/50 text-amber-300 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]"></span>
+              DAYLIGHT
+            </span>
+          </div>
+
+          <!-- Live Readout & Slider -->
+          <div class="my-1.5 py-2 px-3 rounded-lg bg-slate-950/60 border border-cyan-500/15">
+            <div class="flex items-baseline justify-between mb-1">
+              <span class="text-[10px] font-mono text-slate-400">LUMEN INTENSITY</span>
+              <span id="lamp-val" class="font-orbitron font-extrabold text-base text-cyan-300 tracking-wide glow-cyan-text">76%</span>
+            </div>
+            <!-- Slider -->
+            <div class="w-full flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="moon" class="lucide lucide-moon w-3 h-3 text-slate-500"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+              <input type="range" min="10" max="100" value="76" class="w-full accent-cyan-400" id="lamp-slider" oninput="updateLamp(this.value)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="sun" class="lucide lucide-sun w-3 h-3 text-amber-400"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+            </div>
+            <div class="flex justify-between text-[8px] font-mono text-slate-500 mt-1">
+              <span>SPECTRUM: 5,400K BOOST</span>
+              <span class="text-cyan-400">MELATONIN LOCK: OFF</span>
+            </div>
+          </div>
+
+          <!-- Bottom Control: Power Toggle -->
+          <div class="flex items-center justify-between pt-1 border-t border-cyan-500/10">
+            <span class="text-[10px] font-mono text-slate-300 tracking-wider">SYSTEM POWER</span>
+            <div class="flex items-center gap-2 cursor-pointer toggle-control toggle-active" onclick="toggleSwitch(this)">
+              <span class="text-[9px] font-orbitron font-bold text-cyan-400 toggle-label">ON</span>
+              <div class="w-10 h-5 rounded-full border border-cyan-500/40 bg-slate-900/80 p-0.5 flex items-center toggle-track">
+                <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 toggle-thumb shadow-[0_0_6px_#00f0ff]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Strip: Quick Habitat Actions Bar (Compact Glass Bar) -->
+      <div class="glass-panel rounded-xl px-4 py-2.5 flex items-center justify-between shrink-0 border-cyan-500/25">
+        <div class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="zap" class="lucide lucide-zap w-3.5 h-3.5 text-cyan-400"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
+          <span class="text-[10px] font-orbitron font-bold tracking-widest text-slate-300">QUICK HABITAT PROTOCOLS</span>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <!-- Button 1 -->
+          <button onclick="triggerAction('SLEEP CYCLE INITIATED')" class="px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/40 text-[10px] font-orbitron tracking-wider text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(0,240,255,0.3)] transition-all flex items-center gap-1.5 active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" class="lucide lucide-plus w-3 h-3"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+            <span>START SLEEP CYCLE</span>
+          </button>
+          <!-- Button 2 -->
+          <button onclick="triggerAction('WAKE-UP VERIFIED')" class="px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/40 text-[10px] font-orbitron tracking-wider text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(0,240,255,0.3)] transition-all flex items-center gap-1.5 active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" class="lucide lucide-plus w-3 h-3"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+            <span>CONFIRM WAKE-UP</span>
+          </button>
+          <!-- Button 3 -->
+          <button onclick="triggerAction('RATION LOGGED (3,200 kcal)')" class="px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-950/40 text-[10px] font-orbitron tracking-wider text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all flex items-center gap-1.5 active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" class="lucide lucide-plus w-3 h-3"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+            <span>LOG RATION PACK</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= RIGHT COLUMN: HABITAT MODULES & AIRLOCKS (48% = col-span-6) ================= -->
+    <section class="col-span-6 flex flex-col gap-3">
+
+      <!-- Section Header -->
+      <div class="flex items-center justify-between px-1 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="w-1.5 h-4 bg-cyan-400 rounded-sm shadow-[0_0_8px_#00f0ff]"></span>
+          <h2 class="font-orbitron font-bold text-sm tracking-widest text-white flex items-center gap-2">
+            HABITAT MODULES &amp; AIRLOCKS
+            <span class="text-[10px] font-mono text-cyan-400/80 font-normal px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-400/30">MY ROOMS</span>
+          </h2>
+        </div>
+        <div class="text-[10px] font-mono text-emerald-400 flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
+          6 COMPARTMENTS PRESSURIZED
+        </div>
+      </div>
+
+      <!-- Top Panel: 2x3 Interactive Habitat Modules Grid -->
+      <div class="glass-panel rounded-xl p-3 flex-1 flex flex-col justify-between border-cyan-500/25 min-h-0">
+        <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-cyan-500/15 shrink-0">
+          <span class="text-[10px] font-orbitron tracking-wider text-slate-300 font-semibold">INTERNAL ENVIRONMENTAL ZONES</span>
+          <span class="text-[9px] font-mono text-slate-400">SELECT TO VIEW COMPARTMENT TELEMETRY</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5 flex-1 min-h-0" id="module-grid">
+
+          <!-- 1. LIVING QUARTERS (Active / Glowing border) -->
+          <div onclick="selectModule(this, 'LIVING QUARTERS')" class="module-card glass-panel-sub rounded-lg p-2.5 flex flex-col justify-between border-cyan-400 bg-cyan-950/40 shadow-[0_0_15px_rgba(0,240,255,0.35)] cursor-pointer transition-all hover:scale-[1.02] relative group">
+            <div class="flex items-start justify-between">
+              <span class="text-[10px] font-orbitron font-bold text-cyan-200 tracking-wider">LIVING QUARTERS</span>
+              <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f0ff] animate-pulse"></span>
+            </div>
+            <div class="my-1">
+              <div class="text-sm font-orbitron font-bold text-white glow-cyan-text">21.4°C</div>
+              <div class="text-[10px] font-mono text-cyan-400 tracking-wide mt-0.5">O₂: 20.8% • CO₂: 0.04%</div>
+            </div>
+            <div class="text-[8px] font-mono text-emerald-400 flex items-center justify-between pt-1 border-t border-cyan-400/20">
+              <span>STATUS: OCCUPIED</span>
+              <span class="text-cyan-300 font-bold">ACTIVE</span>
+            </div>
+          </div>
+
+          <!-- 2. COMMAND DECK -->
+          <div onclick="selectModule(this, 'COMMAND DECK')" class="module-card glass-panel-sub rounded-lg p-2.5 flex flex-col justify-between border-cyan-500/20 cursor-pointer transition-all hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(0,240,255,0.2)] hover:scale-[1.02] relative group">
+            <div class="flex items-start justify-between">
+              <span class="text-[10px] font-orbitron font-bold text-slate-200 tracking-wider">COMMAND DECK</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <div class="my-1">
+              <div class="text-sm font-orbitron font-bold text-white">20.9°C</div>
+              <div class="text-[10px] font-mono text-slate-300 tracking-wide mt-0.5">AVIONICS SYNCED</div>
+            </div>
+            <div class="text-[8px] font-mono text-slate-400 flex items-center justify-between pt-1 border-t border-cyan-500/10">
+              <span>STATUS: ONLINE</span>
+              <span class="text-emerald-400 font-medium">ACTIVE</span>
+            </div>
+          </div>
+
+          <!-- 3. SLEEP POD BAY -->
+          <div onclick="selectModule(this, 'SLEEP POD BAY')" class="module-card glass-panel-sub rounded-lg p-2.5 flex flex-col justify-between border-cyan-500/20 cursor-pointer transition-all hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(0,240,255,0.2)] hover:scale-[1.02] relative group">
+            <div class="flex items-start justify-between">
+              <span class="text-[10px] font-orbitron font-bold text-slate-200 tracking-wider">SLEEP POD BAY</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            </div>
+            <div class="my-1">
+              <div class="text-sm font-orbitron font-bold text-white">19.5°C</div>
+              <div class="text-[10px] font-mono text-slate-300 tracking-wide mt-0.5">ACOUSTIC DAMP 98%</div>
+            </div>
+            <div class="text-[8px] font-mono text-slate-400 flex items-center justify-between pt-1 border-t border-cyan-500/10">
+              <span>PODS: 0/6 IN USE</span>
+              <span class="text-amber-400 font-medium">STANDBY</span>
+            </div>
+          </div>
+
+          <!-- 4. MEDICAL BAY -->
+          <div onclick="selectModule(this, 'MEDICAL BAY')" class="module-card glass-panel-sub rounded-lg p-2.5 flex flex-col justify-between border-cyan-500/20 cursor-pointer transition-all hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(0,240,255,0.2)] hover:scale-[1.02] relative group">
+            <div class="flex items-start justify-between">
+              <span class="text-[10px] font-orbitron font-bold text-slate-200 tracking-wider">MEDICAL BAY</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            </div>
+            <div class="my-1">
+              <div class="text-sm font-orbitron font-bold text-white">21.0°C</div>
+              <div class="text-[10px] font-mono text-cyan-300 tracking-wide mt-0.5">AUTONOMY READY</div>
+            </div>
+            <div class="text-[8px] font-mono text-slate-400 flex items-center justify-between pt-1 border-t border-cyan-500/10">
+              <span>TRIAGE DOCK: IDLE</span>
+              <span class="text-cyan-400 font-bold">READY</span>
+            </div>
+          </div>
+
+          <!-- 5. GALLEY RATIONS -->
+          <div onclick="selectModule(this, 'GALLEY RATIONS')" class="module-card glass-panel-sub rounded-lg p-2.5 flex flex-col justify-between border-cyan-500/20 cursor-pointer transition-all hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(0,240,255,0.2)] hover:scale-[1.02] relative group">
+            <div class="flex items-start justify-between">
+              <span class="text-[10px] font-orbitron font-bold text-slate-200 tracking-wider">GALLEY RATIONS</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <div class="my-1">
+              <div class="text-sm font-orbitron font-bold text-white">21.2°C</div>
+              <div class="text-[10px] font-mono text-slate-300 tracking-wide mt-0.5">WATER: RECHARGED</div>
+            </div>
+            <div class="text-[8px] font-mono text-slate-400 flex items-center justify-between pt-1 border-t border-cyan-500/10">
+              <span>STORES: 94.6%</span>
+              <span class="text-emerald-400 font-medium">NOMINAL</span>
+            </div>
+          </div>
+
+          <!-- 6. ARED GYM LAB -->
+          <div onclick="selectModule(this, 'ARED GYM LAB')" class="module-card glass-panel-sub rounded-lg p-2.5 flex flex-col justify-between border-cyan-500/20 cursor-pointer transition-all hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(0,240,255,0.2)] hover:scale-[1.02] relative group">
+            <div class="flex items-start justify-between">
+              <span class="text-[10px] font-orbitron font-bold text-slate-200 tracking-wider">ARED GYM LAB</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            </div>
+            <div class="my-1">
+              <div class="text-sm font-orbitron font-bold text-white">20.2°C</div>
+              <div class="text-[10px] font-mono text-cyan-300 tracking-wide mt-0.5">CALIBRATED: 100%</div>
+            </div>
+            <div class="text-[8px] font-mono text-slate-400 flex items-center justify-between pt-1 border-t border-cyan-500/10">
+              <span>EXERCISE: SCHEDULED</span>
+              <span class="text-cyan-400 font-bold">LOAD 100%</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bottom Panel: Airlock & Hatch Security (2 Side-by-Side Cards) -->
+      <div class="grid grid-cols-2 gap-3 shrink-0">
+
+        <!-- Card 1: Front Airlock -->
+        <div class="glass-panel rounded-xl p-3 flex flex-col justify-between border-cyan-500/20">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-slate-900/80 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="shield-check" class="lucide lucide-shield-check w-4 h-4 text-emerald-400"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>
+              </div>
+              <div>
+                <h4 class="font-orbitron font-bold text-xs text-white tracking-wider">FRONT AIRLOCK</h4>
+                <span class="text-[9px] font-mono text-slate-400">PORT EVA HATCH 01</span>
+              </div>
+            </div>
+            <!-- Status Pill -->
+            <span id="airlock1-pill" class="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-emerald-950/80 border border-emerald-400/60 text-emerald-300 flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              SEALED • 101.3 kPa
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between mt-2 pt-2 border-t border-cyan-500/15">
+            <span class="text-[9px] font-mono text-slate-400">PRESSURE DIFFERENTIAL: 0.00</span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="setLockState('airlock1', true)" id="airlock1-lock" class="px-2.5 py-1 rounded text-[9px] font-orbitron font-bold tracking-wider bg-cyan-950/90 border border-cyan-400 text-cyan-300 shadow-[0_0_10px_rgba(0,240,255,0.3)] transition-all">
+                LOCK
+              </button>
+              <button onclick="setLockState('airlock1', false)" id="airlock1-unlock" class="px-2.5 py-1 rounded text-[9px] font-orbitron font-bold tracking-wider bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-white transition-all">
+                UNLOCK
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Docking Hatch -->
+        <div class="glass-panel rounded-xl p-3 flex flex-col justify-between border-cyan-500/20">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-slate-900/80 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="lock" class="lucide lucide-lock w-4 h-4 text-emerald-400"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </div>
+              <div>
+                <h4 class="font-orbitron font-bold text-xs text-white tracking-wider">DOCKING HATCH</h4>
+                <span class="text-[9px] font-mono text-slate-400">AXIAL VEHICLE MATING</span>
+              </div>
+            </div>
+            <!-- Status Pill -->
+            <span id="airlock2-pill" class="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-emerald-950/80 border border-emerald-400/60 text-emerald-300 flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              SEALED • ZERO LEAK
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between mt-2 pt-2 border-t border-cyan-500/15">
+            <span class="text-[9px] font-mono text-slate-400">MECH CLAMPS: ENGAGED</span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="setLockState('airlock2', true)" id="airlock2-lock" class="px-2.5 py-1 rounded text-[9px] font-orbitron font-bold tracking-wider bg-cyan-950/90 border border-cyan-400 text-cyan-300 shadow-[0_0_10px_rgba(0,240,255,0.3)] transition-all">
+                LOCK
+              </button>
+              <button onclick="setLockState('airlock2', false)" id="airlock2-unlock" class="px-2.5 py-1 rounded text-[9px] font-orbitron font-bold tracking-wider bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-white transition-all">
+                UNLOCK
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= BOTTOM STATUS BAR ================= -->
+  <!-- Standardized Camera Monitor Trigger & Preview Panel -->
+<div class="fixed bottom-16 left-6 z-50 flex flex-col items-start gap-3">
+  <!-- Expandable Optical Mood Monitor Panel -->
+  <div id="cosmo-cam-panel" class="hidden w-80 rounded-2xl glass-panel p-3.5 border border-cyan-400/60 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(0,240,255,0.25)] text-left backdrop-blur-xl bg-slate-950/90 transition-all duration-300 mb-2">
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-2 border-b border-cyan-500/25">
+      <div class="flex items-center gap-2">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 shadow-[0_0_6px_#f43f5e]"></span>
+        </span>
+        <span class="font-orbitron text-xs font-bold text-white tracking-wider glow-cyan-text">OPTICAL MOOD MONITOR</span>
+      </div>
+      <button onclick="toggleCosmoCam(event)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-white hover:bg-cyan-500/20 transition-all cursor-pointer text-xs font-mono">✕</button>
+    </div>
+
+    <!-- Video Feed Viewport -->
+    <div class="relative aspect-[16/10] bg-slate-950/80 rounded-xl overflow-hidden my-2.5 border border-cyan-500/30 flex items-center justify-center group">
+      <!-- Background Grid & Telemetry Overlay -->
+      <div class="absolute inset-0 bg-[radial-gradient(#00f0ff_1px,transparent_1px)] [background-size:16px_16px] opacity-15 pointer-events-none"></div>
+      
+      <!-- Optical Reticle Corners -->
+      <div class="absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-cyan-400"></div>
+      <div class="absolute top-2 right-2 w-3.5 h-3.5 border-t-2 border-r-2 border-cyan-400"></div>
+      <div class="absolute bottom-2 left-2 w-3.5 h-3.5 border-b-2 border-l-2 border-cyan-400"></div>
+      <div class="absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-cyan-400"></div>
+
+      <!-- Scanline Beam -->
+      <div class="absolute inset-x-0 h-0.5 bg-cyan-400/80 shadow-[0_0_10px_#00f0ff] animate-pulse top-1/2 -translate-y-1/2 pointer-events-none"></div>
+
+      <!-- Central Target Reticle -->
+      <div class="w-20 h-20 rounded-full border border-cyan-400/40 flex items-center justify-center relative">
+        <div class="w-12 h-12 rounded-full border border-dashed border-cyan-300/60 animate-spin"></div>
+        <div class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f0ff]"></div>
+      </div>
+
+      <!-- Top Telemetry Tag -->
+      <div class="absolute top-2 left-3 flex items-center gap-1.5 text-[8px] font-mono text-cyan-300 bg-slate-950/70 px-1.5 py-0.5 rounded border border-cyan-500/20">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>OPTICAL SENSOR CAM-01</span>
+      </div>
+      <div class="absolute top-2 right-3 text-[8px] font-mono text-cyan-400 bg-slate-950/70 px-1.5 py-0.5 rounded border border-cyan-500/20">
+        60 FPS • 1080P
+      </div>
+    </div>
+
+    <!-- Detected Mood Badge & Metrics -->
+    <div class="p-2 rounded-lg bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] animate-pulse"></span>
+        <span class="text-[10px] font-orbitron font-bold text-emerald-300 tracking-wider">STATUS: OPTIMAL / FOCUSED</span>
+      </div>
+      <span class="text-[9px] font-mono text-cyan-300 bg-cyan-500/20 px-1.5 py-0.5 rounded border border-cyan-400/30 font-bold">CONF: 94%</span>
+    </div>
+
+    <!-- Privacy Caption -->
+    <p class="text-[8px] font-mono text-slate-400 tracking-wide text-center mt-2 flex items-center justify-center gap-1">
+      <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      On-device processing • Video never uploaded
+    </p>
+  </div>
+
+  <!-- 60px x 60px Circular Light Blue Glowing Camera Trigger Button -->
+  <button id="cosmo-cam-trigger" onclick="toggleCosmoCam(event)" class="relative w-[60px] h-[60px] rounded-full backdrop-blur-xl bg-slate-950/80 border border-cyan-300/80 flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-[0_0_25px_rgba(56,189,248,0.6),0_0_45px_rgba(0,240,255,0.35)] group animate-beacon" title="Optical Mood Monitor">
+    <!-- Live Emerald Optical Beacon Dot -->
+    <span class="absolute top-1 right-1 flex h-3 w-3">
+      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-400 border border-slate-950 shadow-[0_0_8px_#10b981]"></span>
+    </span>
+
+    <!-- 28px Video Camera SVG in Vivid Light Blue -->
+    <svg class="w-7 h-7 text-[#7dd3fc] drop-shadow-[0_0_8px_#00f0ff] group-hover:text-white transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"></path>
+    </svg>
+  </button>
+</div><footer class="w-full flex items-center justify-between px-5 py-2 glass-panel rounded-xl text-[10px] font-mono tracking-wider text-slate-400 z-20 shrink-0">
+    <div class="flex items-center gap-6">
+      <span class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
+        <span>CORE AUTONOMY: <strong class="text-slate-200">OPTIMAL</strong></span>
+      </span>
+      <span class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f0ff]"></span>
+        <span>RAD SHIELDING: <strong class="text-slate-200">NOMINAL (99.4%)</strong></span>
+      </span>
+      <span class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f0ff]"></span>
+        <span>HABITAT SYSTEMS: <strong class="text-emerald-400">100% ONLINE</strong></span>
+      </span>
+    </div>
+
+    <!-- Notification Toast Message Output -->
+    <div id="toast-message" class="text-cyan-300 font-orbitron text-[9px] tracking-widest opacity-0 transition-opacity duration-300">
+      COMMAND LOGGED
+    </div>
+
+    <div class="flex items-center gap-4 text-slate-500">
+      <span>QUANTUM ENCRYPTED TRANSMISSION</span>
+      <span class="text-cyan-400 font-bold">CC-02 // V4.8.2</span>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Toggle switch logic
+    function toggleSwitch(element) {
+      element.classList.toggle('toggle-active');
+      const label = element.querySelector('.toggle-label');
+      if (element.classList.contains('toggle-active')) {
+        label.textContent = 'ON';
+        label.classList.remove('text-slate-500');
+        label.classList.add('text-cyan-400');
+        showToast('DEVICE STATE: ENGAGED [ONLINE]');
+      } else {
+        label.textContent = 'OFF';
+        label.classList.remove('text-cyan-400');
+        label.classList.add('text-slate-500');
+        showToast('DEVICE STATE: STANDBY [OFFLINE]');
+      }
+    }
+
+    // Slider for Circadian Lamp
+    function updateLamp(val) {
+      document.getElementById('lamp-val').textContent = val + '%';
+    }
+
+    // Module Card Selection
+    function selectModule(el, name) {
+      document.querySelectorAll('.module-card').forEach(card => {
+        card.classList.remove('border-cyan-400', 'bg-cyan-950/40', 'shadow-[0_0_15px_rgba(0,240,255,0.35)]');
+        card.classList.add('border-cyan-500/20');
+        const badge = card.querySelector('.module-active-badge');
+        if (badge) badge.remove();
+      });
+      el.classList.add('border-cyan-400', 'bg-cyan-950/40', 'shadow-[0_0_15px_rgba(0,240,255,0.35)]');
+      el.classList.remove('border-cyan-500/20');
+      showToast('TELEMETRY FOCUSED: ' + name);
+    }
+
+    // Airlock lock/unlock toggles
+    function setLockState(lockId, isLocked) {
+      const lockBtn = document.getElementById(lockId + '-lock');
+      const unlockBtn = document.getElementById(lockId + '-unlock');
+      const pill = document.getElementById(lockId + '-pill');
+
+      if (isLocked) {
+        lockBtn.className = "px-2.5 py-1 rounded text-[9px] font-orbitron font-bold tracking-wider bg-cyan-950/90 border border-cyan-400 text-cyan-300 shadow-[0_0_10px_rgba(0,240,255,0.3)] transition-all";
+        unlockBtn.className = "px-2.5 py-1 rounded text-[9px] font-orbitron font-bold tracking-wider bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-white transition-all";
+        pill.className = "px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-emerald-950/80 border border-emerald-400/60 text-emerald-300 flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.3)]";
+        pill.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> SEALED • 101.3 kPa';
+        showToast(lockId.toUpperCase() + ': HARD SEAL LOCK VERIFIED');
+      } else {
+        unlockBtn.className = "px-2.5 py-1 rounded text-[9px] font-orbitron font-bold tracking-wider bg-amber-950/90 border border-amber-400 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)] transition-all";
+        lockBtn.className = "px-2.5 py-1 rounded text-[9px] font-orbitron font-bold tracking-wider bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-white transition-all";
+        pill.className = "px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-amber-950/80 border border-amber-400/60 text-amber-300 flex items-center gap-1 shadow-[0_0_8px_rgba(245,158,11,0.3)]";
+        pill.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> MANUAL UNSEAL CYCLE';
+        showToast(lockId.toUpperCase() + ': UNLOCK CYCLE CONFIRMED');
+      }
+    }
+
+    // Trigger action protocols
+    function triggerAction(actionName) {
+      showToast('PROTOCOL EXECUTED: ' + actionName);
+    }
+
+    // Toast notification
+    function showToast(msg) {
+      const toast = document.getElementById('toast-message');
+      toast.textContent = msg;
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 2500);
+    }
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+  function toggleCosmoCam(event) {
+    if (event) event.stopPropagation();
+    const panel = document.getElementById('cosmo-cam-panel');
+    if (panel) {
+      panel.classList.toggle('hidden');
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    const panel = document.getElementById('cosmo-cam-panel');
+    const trigger = document.getElementById('cosmo-cam-trigger');
+    if (panel && !panel.classList.contains('hidden')) {
+      if (!panel.contains(e.target) && !trigger.contains(e.target)) {
+        panel.classList.add('hidden');
+      }
+    }
+  });
+</script></body></html>
