@@ -116,6 +116,11 @@ def render_page(filename: str) -> HTMLResponse:
         raise HTTPException(status_code=404, detail=f"Missing template: {filename}")
     html = file_path.read_text(encoding="utf-8")
     html = re.sub(r"\{\{DATA:SCREEN:SCREEN_\d+\}\}", "#", html)
+
+    # home.html එකේ cosmo_os.js / cosmo_face.js එක්ක ගැටෙන mock scripts අයින් කරනවා
+    html = re.sub(r'<script[^>]*id=["\']cosmo-cam-controller["\'][^>]*>.*?</script>', '', html, flags=re.DOTALL)
+    html = re.sub(r'<script[^>]*id=["\']dora-controller-script["\'][^>]*>.*?</script>', '', html, flags=re.DOTALL)
+
     inject_tag = '<script src="/static/cosmo_os.js"></script><script src="/static/cosmo_face.js"></script></body>'
     if "</body>" in html:
         html = html.replace("</body>", inject_tag, 1)
@@ -531,15 +536,27 @@ class MoodCheckinRequest(BaseModel):
     astronaut_id: str
     mood_label: str = "sadness"
 
+@app.get("/api/llm_status")
+def api_llm_status():
+    key = agent.groq_api_key or os.environ.get("GROQ_API_KEY")
+    return {
+        "groq_key_configured": bool(key),
+        "groq_key_prefix": (key[:7] + "...") if key else None,
+        "active_model": agent.groq_model,
+        "last_error": agent.last_llm_error,
+    }
+
+
 @app.post("/api/mood_checkin")
 def api_mood_checkin(req: MoodCheckinRequest):
     mission_state = db.get_mission_state()
     sim_time = mission_state.get("ship_time", "08:00")
+    vitals = sim.get_latest_vitals(req.astronaut_id)
     internal_prompt = (
-        f"[VISUAL MOOD CHECK-IN] The astronaut appears visually {req.mood_label}. "
-        f"Gently ask 'Why are you feeling upset?' and immediately try to cheer them up "
-        f"by either telling a short light-hearted joke OR asking if they would like you "
-        f"to play a song from their personal music folder ([ASK_MEDIA])."
+        f"[SYSTEM EVENT: Optical camera just detected the astronaut looks {req.mood_label}.] "
+        f"Speak directly to them as a caring friend. Gently mention you noticed they look a bit {req.mood_label} "
+        f"and ask what is on their mind. Also offer ONE uplifting option (ask if they'd like a track from their "
+        f"music folder and append [ASK_MEDIA], OR share a warm short joke, OR ask about a happy Earth memory)."
     )
     resp = agent.chat(
         req.astronaut_id,
@@ -547,6 +564,8 @@ def api_mood_checkin(req: MoodCheckinRequest):
         is_voice_input=False,
         current_mood=2,
         simulated_time=sim_time,
+        vitals=vitals,
+        save_user_msg=False,
     )
     resp["auto_open_chat"] = True
     return resp
