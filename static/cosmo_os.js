@@ -915,6 +915,21 @@
       rewireAllNavigationLinks();
       ensureFloatingDoraAndMediaBar();
       syncFullState();
+
+      if (typeof window.toggleNotifDrawer !== "function") {
+        window.toggleNotifDrawer = () => {
+          const d = document.getElementById("notif-drawer") || document.getElementById("notification-drawer");
+          if (d) d.classList.toggle("hidden");
+        };
+      }
+
+      ["hud-back-to-top", "back-to-top-hud"].forEach((id) => {
+        const b = document.getElementById(id);
+        if (b) { b.style.bottom = "8.5rem"; }
+      });
+      document.querySelectorAll('button[aria-label="Back to top"]').forEach((b) => {
+        b.style.bottom = "8.5rem";
+      });
     }
   });
 })();
