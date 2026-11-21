@@ -23,42 +23,79 @@
   let upsetStreak = 0;
   let lastTriggerAt = 0;
 
-  function ensureCameraWidgetUI() {
-    if (!document.getElementById("cosmo-cam-trigger")) {
-      const wrap = document.createElement("div");
-      wrap.id = "cosmo-cam-container";
-      wrap.className = "fixed left-6 bottom-14 z-40 flex flex-col items-start select-none";
-      wrap.innerHTML = `
-        <div id="cosmo-cam-panel" class="hidden mb-3 w-72 rounded-2xl border border-cyan-400/40 bg-slate-950/95 backdrop-blur-2xl p-3 shadow-[0_0_28px_rgba(0,240,255,0.22)]">
-          <div class="flex items-center justify-between pb-2 border-b border-cyan-500/20">
-            <span class="text-[10px] font-mono font-bold tracking-widest text-cyan-300">OPTICAL MOOD MONITOR</span>
-            <button id="cosmo-cam-close" type="button" class="text-slate-400 hover:text-white text-xs px-1 cursor-pointer">✕</button>
-          </div>
-          <div class="relative mt-2 rounded-xl overflow-hidden bg-black aspect-[16/10] border border-cyan-500/25">
-            <video id="cosmo-cam-video" autoplay muted playsinline class="w-full h-full object-cover" style="transform: scaleX(-1);"></video>
-            <div id="cosmo-cam-placeholder" class="absolute inset-0 flex items-center justify-center bg-slate-950/85 text-[10px] font-mono text-cyan-300 text-center px-3">
-              Initializing optical sensor...
-            </div>
-          </div>
-          <div id="cosmo-mood-badge" class="mt-2.5 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-white/10 text-[11px] font-mono font-bold text-cyan-300">
-            <span>● SCANNING...</span><span class="text-slate-400 text-[10px]">--%</span>
-          </div>
-          <p class="mt-1.5 text-[9px] font-mono text-slate-500 text-center">On-device processing • Video never uploaded</p>
-        </div>
+  function removeLegacyMockCameraWidgets() {
+    ["cosmo-cam-container", "cosmo-cam-root", "cosmo-cam-wrapper"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
 
-        <button id="cosmo-cam-trigger" type="button" title="View Face & Mood Status"
-          class="relative w-12 h-12 rounded-full border border-cyan-400/60 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center text-cyan-300 hover:text-white hover:border-cyan-300 hover:scale-105 transition-all shadow-[0_0_18px_rgba(6,182,212,0.35)] cursor-pointer">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-          </svg>
-          <span id="cosmo-cam-dot" class="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-slate-950"></span>
-        </button>
-      `;
-      document.body.appendChild(wrap);
+    const oldTrigger = document.getElementById("cosmo-cam-trigger");
+    if (oldTrigger) {
+      const parent = oldTrigger.parentElement;
+      if (parent && parent !== document.body && (parent.classList.contains("fixed") || parent.classList.contains("absolute"))) {
+        parent.remove();
+      } else {
+        oldTrigger.remove();
+      }
     }
 
-    // Drawer එක වැහිලා තිබුණත් browser එක frame decoding pause නොකරන්න persistent hidden video එකක්
+    const oldPanel = document.getElementById("cosmo-cam-panel");
+    if (oldPanel) oldPanel.remove();
+  }
+
+  function buildUnifiedCameraWidget() {
+    removeLegacyMockCameraWidgets();
+
+    const wrap = document.createElement("div");
+    wrap.id = "cosmo-cam-container";
+    wrap.className = "fixed left-6 bottom-14 z-50 flex flex-col items-start select-none pointer-events-auto";
+    wrap.innerHTML = `
+      <div id="cosmo-cam-panel" class="hidden mb-3 w-80 rounded-2xl border border-cyan-400/50 bg-[#060e1c]/95 backdrop-blur-2xl p-3.5 shadow-[0_18px_48px_rgba(0,0,0,0.85),0_0_28px_rgba(0,240,255,0.24)] text-left">
+        <div class="flex items-center justify-between pb-2 border-b border-cyan-500/20">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            </span>
+            <span class="text-[11px] font-mono font-bold tracking-widest text-cyan-300 uppercase">OPTICAL MOOD MONITOR</span>
+          </div>
+          <button id="cosmo-cam-close" type="button" class="text-slate-400 hover:text-white text-xs px-1.5 py-0.5 rounded hover:bg-white/10 cursor-pointer">✕</button>
+        </div>
+
+        <div class="relative mt-2.5 rounded-xl overflow-hidden bg-slate-950 aspect-[16/10] border border-cyan-500/30 flex items-center justify-center">
+          <video id="cosmo-cam-video" autoplay muted playsinline class="w-full h-full object-cover hidden" style="transform: scaleX(-1);"></video>
+          <div id="cosmo-cam-placeholder" class="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-slate-950/90 text-[10px] font-mono text-cyan-300 text-center px-3">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+            <span id="cosmo-cam-placeholder-text">Initializing optical sensor...</span>
+          </div>
+          <!-- HUD Reticle Overlay on top of live feed -->
+          <div class="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-cyan-400/75 pointer-events-none"></div>
+          <div class="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-cyan-400/75 pointer-events-none"></div>
+          <div class="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-cyan-400/75 pointer-events-none"></div>
+          <div class="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-cyan-400/75 pointer-events-none"></div>
+          <div class="absolute top-2 left-3 px-1.5 py-0.5 rounded bg-black/60 text-[8px] font-mono text-cyan-300 pointer-events-none">CAM-01 • LIVE</div>
+        </div>
+
+        <div id="cosmo-mood-badge" class="mt-2.5 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-cyan-500/25 text-[10px] font-mono font-bold text-cyan-300">
+          <span class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>STATUS: SCANNING...
+          </span>
+          <span class="text-white/50 text-[9px]">CONF: --%</span>
+        </div>
+        <p class="mt-1.5 text-[9px] font-mono text-slate-400 text-center">On-device processing • Video never uploaded</p>
+      </div>
+
+      <button id="cosmo-cam-trigger" type="button" aria-expanded="false" aria-label="Open Optical Mood Monitor"
+        class="relative group flex items-center justify-center rounded-full border-2 border-sky-400/80 bg-slate-950/90 backdrop-blur-xl hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        style="width: 58px; height: 58px; box-shadow: 0 0 22px rgba(56, 189, 248, 0.55), 0 0 40px rgba(0, 240, 255, 0.3);">
+        <svg class="w-6 h-6 text-sky-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        <span id="cosmo-cam-dot" class="absolute top-0.5 right-0.5 w-3 h-3 rounded-full bg-amber-400 ring-2 ring-slate-950"></span>
+      </button>
+    `;
+    document.body.appendChild(wrap);
+
     if (!document.getElementById("cosmo-cam-bg-video")) {
       const bgVid = document.createElement("video");
       bgVid.id = "cosmo-cam-bg-video";
@@ -93,46 +130,44 @@
       }
     }
 
-    if (trigger && panel) {
-      trigger.onclick = (e) => {
-        e.stopPropagation();
-        const willOpen = panel.classList.contains("hidden");
-        panel.classList.toggle("hidden");
-        trigger.setAttribute("aria-expanded", String(willOpen));
-        if (willOpen) {
-          if (stream) attachPreviewVideo();
-          else startBackgroundCamera();
-        }
-      };
-    }
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = panel.classList.contains("hidden");
+      panel.classList.toggle("hidden");
+      trigger.setAttribute("aria-expanded", String(willOpen));
+      if (willOpen) {
+        if (stream) attachPreviewVideo();
+        else startBackgroundCamera();
+      }
+    });
 
-    if (closeBtn && panel) {
-      closeBtn.onclick = (e) => {
-        e.stopPropagation();
-        panel.classList.add("hidden");
-        if (trigger) trigger.setAttribute("aria-expanded", "false");
-        // Stream එක stop කරන්නේ නැහැ — background detection දිගටම වැඩ!
-      };
-    }
+    closeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      panel.classList.add("hidden");
+      trigger.setAttribute("aria-expanded", "false");
+    });
 
     window.inspectOpticalFeed = function (e) {
       if (e) e.stopPropagation();
       const drawer = document.getElementById("notification-drawer");
       if (drawer) drawer.classList.add("hidden");
-      if (panel) {
-        panel.classList.remove("hidden");
-        if (stream) attachPreviewVideo();
-        else startBackgroundCamera();
-      }
+      panel.classList.remove("hidden");
+      trigger.setAttribute("aria-expanded", "true");
+      if (stream) attachPreviewVideo();
+      else startBackgroundCamera();
     };
 
     document.addEventListener("click", (e) => {
-      const container = document.getElementById("cosmo-cam-container");
-      if (panel && !panel.classList.contains("hidden") && container) {
-        if (!container.contains(e.target) && !e.target.closest("#notification-drawer")) {
-          panel.classList.add("hidden");
-          if (trigger) trigger.setAttribute("aria-expanded", "false");
-        }
+      if (!panel.classList.contains("hidden") && !wrap.contains(e.target) && !e.target.closest("#notification-drawer")) {
+        panel.classList.add("hidden");
+        trigger.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !panel.classList.contains("hidden")) {
+        panel.classList.add("hidden");
+        trigger.setAttribute("aria-expanded", "false");
       }
     });
   }
@@ -140,19 +175,20 @@
   function setStatusUI(label, score, placeholderText = "") {
     const badge = document.getElementById("cosmo-mood-badge");
     const placeholder = document.getElementById("cosmo-cam-placeholder");
+    const placeholderTxt = document.getElementById("cosmo-cam-placeholder-text");
     const preview = document.getElementById("cosmo-cam-video");
     const dot = document.getElementById("cosmo-cam-dot");
 
     if (placeholderText && placeholder && !stream) {
       placeholder.classList.remove("hidden");
-      placeholder.innerHTML = `<span class="text-[10px] font-mono text-cyan-300 px-2 text-center">${placeholderText}</span>`;
+      if (placeholderTxt) placeholderTxt.textContent = placeholderText;
     } else if (stream && preview) {
       preview.classList.remove("hidden");
       if (placeholder) placeholder.classList.add("hidden");
     }
 
     if (dot && running) {
-      dot.className = "absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-slate-950 shadow-[0_0_6px_#10b981]";
+      dot.className = "absolute top-0.5 right-0.5 w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-slate-950 shadow-[0_0_6px_#10b981]";
     }
 
     if (!badge || !label) return;
@@ -171,7 +207,7 @@
       <span class="flex items-center gap-1.5 ${info.cls} text-[10px] font-mono font-bold tracking-wide">
         <span class="w-1.5 h-1.5 rounded-full ${info.dot} animate-pulse"></span>${info.text}
       </span>
-      <span class="text-white/50 text-[9px] font-mono">CONF: ${Math.round(score * 100)}%</span>
+      <span class="text-white/60 text-[9px] font-mono">CONF: ${Math.round(score * 100)}%</span>
     `;
   }
 
@@ -304,14 +340,14 @@
       setStatusUI("neutral", 1.0, "");
       detectionLoop();
     } catch (err) {
-      setStatusUI(null, 0, "Camera permission needed. Allow camera & click icon.");
+      setStatusUI(null, 0, "Camera blocked. Allow camera permission & click icon.");
     } finally {
       starting = false;
     }
   }
 
   window.addEventListener("DOMContentLoaded", () => {
-    ensureCameraWidgetUI();
+    buildUnifiedCameraWidget();
     startBackgroundCamera();
   });
 })();
