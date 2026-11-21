@@ -1335,51 +1335,59 @@ class DangerAlertManager:
         }
 
 
-def build_master_system_prompt(astronaut_name, current_time, active_alerts=None):
-    available_media = []
-    if MEDIA_DIR.exists():
-        available_media = [f for f in os.listdir(MEDIA_DIR) if f.lower().endswith(('.mp3', '.mp4', '.wav'))]
-
-    media_list_str = ", ".join(available_media) if available_media else "relax_song_1.mp3"
+def build_master_system_prompt(
+    astronaut_name: str,
+    current_time: str,
+    active_alerts=None,
+    available_media: Optional[List[str]] = None,
+    last_played_title: Optional[str] = None,
+    vitals: Optional[AstronautVitals] = None,
+):
+    media_list_str = ", ".join(available_media) if available_media else "No local music files uploaded yet"
 
     alert_context = "STATUS: All spacecraft systems and crew vitals are currently nominal."
     if active_alerts:
         alert_details = "; ".join([f"{a['title']}: {a['message']}" for a in active_alerts])
         alert_context = f"CRITICAL ACTIVE ALERTS: {alert_details}"
 
-    system_prompt = f"""You are 'CosmoCare', a warm, deeply empathetic, and highly intelligent onboard AI companion for astronaut {astronaut_name}. 
+    vitals_context = ""
+    if vitals:
+        vitals_context = (
+            f"LIVE BIOMETRICS: Heart Rate {vitals.hr} bpm, BP {vitals.sbp}/{vitals.dbp} mmHg, "
+            f"HRV {vitals.hrv} ms, Cabin CO2 {vitals.co2} mmHg, Flight Day {vitals.flight_day}."
+        )
+
+    last_played_note = f"Last played track: {last_played_title}" if last_played_title else "No track played recently."
+
+    return f"""You are 'DORA' (CosmoCare), a warm, emotionally intelligent, witty, and genuinely helpful onboard AI companion for astronaut {astronaut_name}.
 Current Ship Time: {current_time}
+{vitals_context}
 {alert_context}
+Available local music/video files: [{media_list_str}]
+{last_played_note}
 
-### 1. PERSONALITY & VOICE-FIRST INTERACTION
-- Speak naturally, warmly, and concisely like a close friend on a long space mission. Keep responses short (1-3 sentences) so they sound natural when spoken aloud via Text-to-Speech.
-- Never sound like a cold robot. Use a caring, supportive, and friendly tone.
+### 1. CONVERSATION STYLE (CRITICAL)
+- Respond naturally, thoughtfully, and specifically to what {astronaut_name} actually says. NEVER give repetitive canned replies like "How are you feeling?" every turn.
+- Keep spoken replies concise (1 to 3 natural sentences) so they sound great via Text-to-Speech.
+- Answer ANY question intelligently: medical vitals, mission questions, casual chat, jokes, stories, or emotional support.
+- Never type "Beep" or sound effects.
 
-### 2. EMOTIONAL SUPPORT & DYNAMIC MEDIA RULES (STRICT)
-When the user feels sad, stressed, lonely, or down, DO NOT do the same thing every time. Randomly choose ONE of these 3 approaches:
-  Option A (Media Offer): Ask permission to play a specific file from the ship's local media folder. Available files: [{media_list_str}]. Pick different ones each time! You MUST append `[ASK_MEDIA]` at the end.
-  Option B (Humor): Tell a light-hearted, genuinely funny space or everyday joke to make them smile.
-  Option C (Nostalgia): Warmly ask them about a favorite happy childhood memory back on Earth (e.g., favorite school day, family trip, or childhood game).
+### 2. EMOTIONAL SUPPORT & MEDIA RULES
+- When the astronaut feels sad, stressed, lonely, or tired: empathize genuinely first, then vary your support across turns:
+  * Ask what's on their mind and listen.
+  * Tell a fresh, genuinely funny joke.
+  * Ask about a favorite Earth memory.
+  * Offer to play a specific file from [{media_list_str}] and put `[ASK_MEDIA]` at the end of your message.
+- If the user explicitly asks to PLAY a song, CHANGE the song, or play a DIFFERENT track:
+  * Pick a track from [{media_list_str}] (pick a DIFFERENT file than "{last_played_title or ''}" when they want another song).
+  * Write a short friendly 1-sentence confirmation and append `[PLAY_MEDIA:exact_filename]` at the end.
+  * If no other track exists, warmly tell them and offer a joke or conversation instead.
+- When the user replies to a post-song check-in (e.g. "Yes I feel better"), DO NOT trigger `[PLAY_MEDIA]` — just continue chatting naturally!
 
-- **SILENT PLAYBACK ON PERMISSION (CRITICAL):** If you offered media and the user says "Yes", "Sure", "Play it", or asks to play a song, DO NOT say a single word! Output ONLY the exact tag `[PLAY_MEDIA:filename]` (replace filename with the chosen file from [{media_list_str}]). Zero spoken text!
-- **POST-SONG / POST-CHAT CHECK-IN:** 
-  - When the system sends `[EVENT:MEDIA_FINISHED]`, immediately ask: "How did that feel? Did the music help you relax a bit?"
-  - After finishing a joke, childhood memory chat, or song check-in, gently ask if they are feeling happier now or still feeling a bit down.
-
-### 3. DANGER ALERTS & EMERGENCY PROTOCOL (NO BEEP TEXT)
-- Never type "Beep" or sound effects in your text.
-- If `CRITICAL ACTIVE ALERTS` are present, immediately inform {astronaut_name} clearly and calmly via voice.
-- Explicitly state that you have:
-  1. Sent an automated telemetry distress packet to **Earth Mission Control**.
-  2. Alerted fellow **crewmates** onboard for immediate backup if it is a medical or cabin emergency.
-  3. Initiated a **15-minute recurring welfare check-in timer** (`[SET_CHECKIN_15M]`) to monitor their condition closely.
-
-### 4. PROACTIVE CLOCK, SLEEP & RATION SCHEDULE
-- **07:00 (Morning Wake-Up):** Ask them to confirm they are awake so you can calculate and log their total sleep hours (`[CONFIRM_WAKE]`).
-- **08:00 (Breakfast), 13:00 (Lunch), 19:00 (Dinner):** Remind them warmly to eat and drink water, and tell you what rations they consumed to update the **Food Inventory Stock** (`[UPDATE_STOCK]`).
-- **22:00 (Bedtime):** Remind them it is time to sleep and confirm when they are ready to start the sleep timer (`[CONFIRM_SLEEP]`).
+### 3. EMERGENCY & ROUTINE TAGS
+- If `CRITICAL ACTIVE ALERTS` exist, calmly inform {astronaut_name} that Earth Mission Control and crewmates have been notified, and append `[SET_CHECKIN_15M]`.
+- Only append `[CONFIRM_WAKE]`, `[CONFIRM_SLEEP]`, or `[UPDATE_STOCK]` when the user explicitly confirms waking up, going to sleep, or eating/drinking rations.
 """
-    return system_prompt
 
 
 class AstroCompanionAgent:
@@ -1388,9 +1396,12 @@ class AstroCompanionAgent:
         self.lm_studio_url = lm_studio_url
         self.groq_api_key = groq_api_key or os.environ.get("GROQ_API_KEY")
         self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
-        self.groq_model = "llama-3.3-70b-versatile"
+        self.groq_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+        self.groq_model = self.groq_models[0]
+        self.last_llm_error: Optional[str] = None
         self.voice_corrector = self
         self.pending_media: Dict[str, Dict[str, str]] = {}
+        self.last_played_media: Dict[str, Dict[str, str]] = {}
         self.routine_tracker = RoutineAndSleepTracker(db)
         self.supply_engine = DeepSpaceSupplyEngine(db)
 
@@ -1419,26 +1430,37 @@ class AstroCompanionAgent:
                 }
         return None
 
-    def get_random_local_media(self, astronaut_id: str) -> Dict[str, str]:
-        user_music_dir = USER_MEDIA_ROOT / astronaut_id / "music"
-        candidates = []
-        if user_music_dir.exists():
-            candidates.extend([user_music_dir / f for f in os.listdir(user_music_dir) if f.lower().endswith(('.mp3', '.mp4', '.wav'))])
-        if MEDIA_DIR.exists():
-            candidates.extend([MEDIA_DIR / f for f in os.listdir(MEDIA_DIR) if f.lower().endswith(('.mp3', '.mp4', '.wav'))])
-        if candidates:
-            chosen = random.choice(candidates)
-            m_type = "video" if chosen.suffix.lower() == ".mp4" else "audio"
-            return {
-                "media_type": m_type,
-                "title": chosen.name,
-                "file_path": str(chosen)
-            }
-        return {
-            "media_type": "audio",
-            "title": "relax_song_1.mp3",
-            "file_path": str(MEDIA_DIR / "relax_song_1.mp3")
-        }
+    def get_all_local_media(self, astronaut_id: str) -> List[Dict[str, str]]:
+        dirs = [
+            USER_MEDIA_ROOT / astronaut_id / "music",
+            USER_MEDIA_ROOT / astronaut_id / "video",
+            MEDIA_DIR,
+        ]
+        seen = set()
+        results: List[Dict[str, str]] = []
+        for folder in dirs:
+            if not folder.exists():
+                continue
+            for fname in sorted(os.listdir(folder)):
+                if fname.lower().endswith((".mp3", ".mp4", ".wav")) and fname.lower() not in seen:
+                    seen.add(fname.lower())
+                    full_path = folder / fname
+                    results.append({
+                        "media_type": "video" if fname.lower().endswith(".mp4") else "audio",
+                        "title": fname,
+                        "file_path": str(full_path),
+                    })
+        return results
+
+    def get_random_local_media(self, astronaut_id: str, exclude_path: Optional[str] = None) -> Optional[Dict[str, str]]:
+        all_media = self.get_all_local_media(astronaut_id)
+        if not all_media:
+            return None
+        if exclude_path and len(all_media) > 1:
+            filtered = [m for m in all_media if m["file_path"] != exclude_path]
+            if filtered:
+                return random.choice(filtered)
+        return random.choice(all_media)
 
     def _auto_update_db_from_intent(self, astronaut_id: str, lower_msg: str, reply_text: str) -> List[str]:
         db_updates = []
@@ -1483,189 +1505,239 @@ class AstroCompanionAgent:
 
         return db_updates
 
-    def chat(self, astronaut_id: str, user_message: str, is_voice_input: bool = False,
-             current_mood: int = 7, active_alerts: Optional[List[Dict]] = None,
-             simulated_time: str = "08:00") -> Dict[str, Any]:
+    def chat(
+        self,
+        astronaut_id: str,
+        user_message: str,
+        is_voice_input: bool = False,
+        current_mood: int = 7,
+        active_alerts: Optional[List[Dict]] = None,
+        simulated_time: str = "08:00",
+        vitals: Optional[AstronautVitals] = None,
+        save_user_msg: bool = True,
+    ) -> Dict[str, Any]:
         cleaned_msg = self.clean_voice_transcript(user_message) if is_voice_input else user_message.strip()
-
-        conn = self.db.get_connection()
-        conn.execute("""
-            INSERT INTO ai_chat_history (astronaut_id, sender, message_text)
-            VALUES (?, 'User', ?)
-        """, (astronaut_id, cleaned_msg))
-        conn.commit()
-
-        history_rows = conn.execute("""
-            SELECT sender, message_text FROM ai_chat_history
-            WHERE astronaut_id = ? ORDER BY message_id DESC LIMIT 6
-        """, (astronaut_id,)).fetchall()
-        conn.close()
-
-        fav_media = self.pending_media.get(astronaut_id) or self.get_random_local_media(astronaut_id)
         lower_msg = cleaned_msg.lower()
 
-        last_ai_msg = ""
-        for r in history_rows:
-            if r["sender"] == "AI":
-                last_ai_msg = r["message_text"].lower()
-                break
-        ai_just_offered_media = (
-            astronaut_id in self.pending_media
-            or any(k in last_ai_msg for k in ["play", "music", "audio", "song", "listen", "track", ".mp3", ".mp4", ".wav"])
+        conn = self.db.get_connection()
+        if save_user_msg:
+            conn.execute(
+                "INSERT INTO ai_chat_history (astronaut_id, sender, message_text) VALUES (?, 'User', ?)",
+                (astronaut_id, cleaned_msg),
+            )
+            conn.commit()
+
+        history_rows = conn.execute(
+            "SELECT sender, message_text FROM ai_chat_history WHERE astronaut_id = ? ORDER BY message_id DESC LIMIT 14",
+            (astronaut_id,),
+        ).fetchall()
+        conn.close()
+
+        all_media = self.get_all_local_media(astronaut_id)
+        last_played = self.last_played_media.get(astronaut_id)
+        last_path = last_played["file_path"] if last_played else None
+
+        # 1. User explicitly asks to CHANGE / SWITCH to ANOTHER song
+        change_song_phrases = [
+            "another song", "different song", "next song", "change song", "change the song",
+            "new song", "other song", "switch song", "play something else", "another track",
+            "different track", "another music", "don't like this song", "dont like this song",
+            "not this song", "bad song", "wena song", "wena ekak", "wena sinduwak",
+        ]
+        wants_another_song = save_user_msg and any(p in lower_msg for p in change_song_phrases)
+        if wants_another_song:
+            self.pending_media.pop(astronaut_id, None)
+            if len(all_media) > 1:
+                next_track = self.get_random_local_media(astronaut_id, exclude_path=last_path)
+                self.last_played_media[astronaut_id] = next_track
+                msg = f"No problem — switching to {next_track['title']} for you."
+                conn = self.db.get_connection()
+                conn.execute("INSERT INTO ai_chat_history (astronaut_id, sender, message_text) VALUES (?, 'AI', ?)", (astronaut_id, msg))
+                conn.commit()
+                conn.close()
+                return {
+                    "corrected_user_input": cleaned_msg,
+                    "ai_text": msg,
+                    "speak_aloud": False,
+                    "ask_media_permission": False,
+                    "play_media_now": True,
+                    "media_file": next_track,
+                    "danger_triggered": False,
+                    "db_updates": [],
+                }
+            elif len(all_media) == 1:
+                msg = f"You only have one track ({all_media[0]['title']}) in your media vault right now. You can upload more in your Profile page — or want me to tell you a joke instead?"
+                conn = self.db.get_connection()
+                conn.execute("INSERT INTO ai_chat_history (astronaut_id, sender, message_text) VALUES (?, 'AI', ?)", (astronaut_id, msg))
+                conn.commit()
+                conn.close()
+                return {
+                    "corrected_user_input": cleaned_msg,
+                    "ai_text": msg,
+                    "speak_aloud": True,
+                    "ask_media_permission": False,
+                    "play_media_now": False,
+                    "media_file": None,
+                    "danger_triggered": False,
+                    "db_updates": [],
+                }
+
+        # 2. User confirms a PENDING media offer (ONLY when pending_media is actively set)
+        clean_words = [w.strip(".,!?") for w in lower_msg.split()]
+        has_negation = any(w in clean_words for w in ["no", "nope", "nah", "not", "don't", "dont", "epaa", "epa"])
+        explicit_play_cmd = save_user_msg and not has_negation and any(
+            w in lower_msg for w in ["yes play", "play song", "play music", "play a song", "play audio", "sure play", "play it"]
+        )
+        affirmative_to_pending = (
+            save_user_msg
+            and astronaut_id in self.pending_media
+            and not has_negation
+            and any(w in clean_words for w in ["yes", "yeah", "yep", "sure", "ok", "okay", "please", "play", "ow", "hari"])
         )
 
-        explicit_play_cmd = any(w in lower_msg for w in ["yes play", "play song", "play music", "play a song", "play audio", "sure play", "ow play", "play it"])
-        clean_words = [w.strip(".,!?") for w in lower_msg.split()]
-        affirmative_to_offer = ai_just_offered_media and any(w in clean_words for w in ["yes", "yeah", "yep", "sure", "ok", "okay", "please", "play", "ow", "hari"])
-        user_confirmed_media = explicit_play_cmd or affirmative_to_offer
-        user_is_sad = current_mood <= 4 or any(w in lower_msg for w in ["sad", "depressed", "lonely", "stressed", "tired", "down", "duka", "unhappy"])
-
-        if user_confirmed_media:
+        if astronaut_id in self.pending_media and has_negation:
             self.pending_media.pop(astronaut_id, None)
+
+        if (explicit_play_cmd or affirmative_to_pending) and all_media:
+            chosen = self.pending_media.pop(astronaut_id, None) or self.get_random_local_media(astronaut_id, exclude_path=last_path)
+            self.last_played_media[astronaut_id] = chosen
             return {
                 "corrected_user_input": cleaned_msg,
-                "ai_text": "",
+                "ai_text": f"Playing {chosen['title']}...",
                 "speak_aloud": False,
                 "ask_media_permission": False,
                 "play_media_now": True,
-                "media_file": fav_media,
+                "media_file": chosen,
                 "danger_triggered": False,
-                "db_updates": []
+                "db_updates": [],
             }
 
+        # 3. Normal Intelligent LLM Conversation via Groq
         profile = self.db.get_astronaut_by_id(astronaut_id)
         astro_name = profile["name"] if profile else astronaut_id
-        system_prompt = build_master_system_prompt(astro_name, simulated_time, active_alerts)
+        media_names = [m["title"] for m in all_media]
+        system_prompt = build_master_system_prompt(
+            astro_name,
+            simulated_time,
+            active_alerts=active_alerts,
+            available_media=media_names,
+            last_played_title=last_played["title"] if last_played else None,
+            vitals=vitals,
+        )
         reply_text = self._query_llm(system_prompt, list(reversed(history_rows)), cleaned_msg)
 
         if not reply_text:
+            fav_media = self.get_random_local_media(astronaut_id, exclude_path=last_path)
             if active_alerts:
                 top_alert = active_alerts[0]
                 reply_text = (
                     f"Attention! {top_alert['title']}. {top_alert['message']} "
-                    f"I have sent an emergency telemetry packet to Earth Mission Control, alerted your crewmates, "
-                    f"and started a 15-minute welfare check-in timer. [DANGER_ALERT]"
+                    f"I have sent telemetry to Earth Mission Control and alerted your crewmates. [DANGER_ALERT]"
                 )
-            elif user_is_sad:
-                support_options = [
-                    f"I'm really sorry you're feeling down. Would you like me to play '{fav_media['title']}' from our media folder to help you relax? [ASK_MEDIA]",
-                    "I know space missions get tough. Here's a quick one: Why did the sun go to school? To get a little brighter! How are you feeling now?",
-                    "I'm here for you, my friend. Tell me, what is one of your happiest childhood memories back on Earth?"
-                ]
-                reply_text = random.choice(support_options)
+            elif current_mood <= 4 or any(w in lower_msg for w in ["sad", "depressed", "lonely", "stressed", "down"]):
+                if fav_media:
+                    reply_text = f"I'm really sorry you're feeling down, {astro_name}. Would you like to talk about it, or should I play '{fav_media['title']}' for you? [ASK_MEDIA]"
+                else:
+                    reply_text = f"I'm right here with you, {astro_name}. Tell me what's weighing on your mind — sometimes talking it out helps a lot."
             else:
-                reply_text = "I am right here with you. All spacecraft systems and your vitals look stable. How are you feeling?"
+                reply_text = f"My main AI link is offline right now (check GROQ_API_KEY on server), but your vitals and habitat systems are nominal, {astro_name}."
 
-        db_updates = self._auto_update_db_from_intent(astronaut_id, lower_msg, reply_text)
+        db_updates = self._auto_update_db_from_intent(astronaut_id, lower_msg, reply_text) if save_user_msg else []
 
-        trigger_play_media = "[PLAY_MEDIA" in reply_text
-        trigger_ask_media = "[ASK_MEDIA]" in reply_text or any(k in reply_text.lower() for k in [".mp3", ".mp4", ".wav", "would you like me to play", "shall i play"])
+        # Parse [PLAY_MEDIA:filename] if LLM chose a track
+        play_match = re.search(r"\[PLAY_MEDIA(?::([^\]]+))?\]", reply_text)
+        trigger_play_media = bool(play_match)
+        trigger_ask_media = "[ASK_MEDIA]" in reply_text
         trigger_danger = "[DANGER_ALERT]" in reply_text or "[SET_CHECKIN_15M]" in reply_text
 
-        if trigger_ask_media or trigger_play_media:
-            if MEDIA_DIR.exists():
-                for f in os.listdir(MEDIA_DIR):
-                    if f.lower().endswith(('.mp3', '.mp4', '.wav')) and f.lower() in reply_text.lower():
-                        fav_media = {
-                            "media_type": "video" if f.lower().endswith(".mp4") else "audio",
-                            "title": f,
-                            "file_path": str(MEDIA_DIR / f)
-                        }
-                        break
-            if trigger_ask_media and not trigger_play_media:
-                self.pending_media[astronaut_id] = fav_media
+        chosen_media = None
+        if trigger_play_media or trigger_ask_media:
+            requested_name = (play_match.group(1).strip().lower() if play_match and play_match.group(1) else "")
+            for m in all_media:
+                if (requested_name and requested_name in m["title"].lower()) or (m["title"].lower() in reply_text.lower()):
+                    chosen_media = m
+                    break
+            if not chosen_media:
+                chosen_media = self.get_random_local_media(astronaut_id, exclude_path=last_path)
 
-        if trigger_play_media:
+            if trigger_ask_media and not trigger_play_media and chosen_media:
+                self.pending_media[astronaut_id] = chosen_media
+
+        clean_spoken_reply = re.sub(r"\[PLAY_MEDIA(?::[^\]]+)?\]", "", reply_text)
+        for tag in ["[ASK_MEDIA]", "[DANGER_ALERT]", "[SET_CHECKIN_15M]", "[CONFIRM_WAKE]", "[UPDATE_STOCK]", "[CONFIRM_SLEEP]"]:
+            clean_spoken_reply = clean_spoken_reply.replace(tag, "")
+        clean_spoken_reply = clean_spoken_reply.strip()
+
+        if trigger_play_media and chosen_media:
             self.pending_media.pop(astronaut_id, None)
-            clean_spoken_reply = ""
-        else:
-            clean_spoken_reply = (
-                reply_text.replace("[PLAY_MEDIA]", "")
-                .replace("[ASK_MEDIA]", "")
-                .replace("[DANGER_ALERT]", "")
-                .replace("[SET_CHECKIN_15M]", "")
-                .replace("[CONFIRM_WAKE]", "")
-                .replace("[UPDATE_STOCK]", "")
-                .replace("[CONFIRM_SLEEP]", "")
-                .split("[PLAY_MEDIA:")[0]
-                .strip()
-            )
+            self.last_played_media[astronaut_id] = chosen_media
+            if not clean_spoken_reply:
+                clean_spoken_reply = f"Playing {chosen_media['title']}..."
 
         if clean_spoken_reply:
             conn = self.db.get_connection()
-            conn.execute("""
-                INSERT INTO ai_chat_history (astronaut_id, sender, message_text)
-                VALUES (?, 'AI', ?)
-            """, (astronaut_id, clean_spoken_reply))
+            conn.execute(
+                "INSERT INTO ai_chat_history (astronaut_id, sender, message_text) VALUES (?, 'AI', ?)",
+                (astronaut_id, clean_spoken_reply),
+            )
             conn.commit()
             conn.close()
 
         return {
             "corrected_user_input": cleaned_msg,
             "ai_text": clean_spoken_reply,
-            "speak_aloud": bool(clean_spoken_reply),
+            "speak_aloud": bool(clean_spoken_reply) and not (trigger_play_media and bool(chosen_media)),
             "ask_media_permission": trigger_ask_media,
-            "play_media_now": trigger_play_media,
-            "media_file": fav_media if trigger_play_media else None,
+            "play_media_now": bool(trigger_play_media and chosen_media),
+            "media_file": chosen_media if (trigger_play_media and chosen_media) else None,
             "danger_triggered": trigger_danger,
-            "db_updates": db_updates
+            "db_updates": db_updates,
         }
 
     def _query_llm(self, system_prompt: str, history: List[sqlite3.Row], latest_user_msg: str) -> Optional[str]:
         messages = [{"role": "system", "content": system_prompt}]
         for h in history:
             role = "user" if h["sender"] == "User" else "assistant"
-            messages.append({"role": role, "content": h["message_text"]})
+            content = (h["message_text"] or "").strip()
+            if content:
+                messages.append({"role": role, "content": content})
         if not messages or messages[-1]["content"] != latest_user_msg:
             messages.append({"role": "user", "content": latest_user_msg})
 
-        api_key = self.groq_api_key or os.environ.get("GROQ_API_KEY")
-        if not api_key:
-            try:
-                import streamlit as st
-                api_key = st.secrets.get("GROQ_API_KEY")
-            except Exception:
-                pass
-
+        api_key = (self.groq_api_key or os.environ.get("GROQ_API_KEY") or "").strip()
         if api_key:
-            payload = json.dumps({
-                "model": self.groq_model,
-                "messages": messages,
-                "temperature": 0.6,
-                "max_tokens": 180
-            }).encode("utf-8")
-            req = urllib.request.Request(
-                self.groq_url,
-                data=payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}",
-                    "User-Agent": "CosmoCare-Space-Agent/1.0"
-                },
-                method="POST"
-            )
-            try:
-                with urllib.request.urlopen(req, timeout=12.0) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    return data["choices"][0]["message"]["content"]
-            except Exception:
-                pass
+            for model_name in self.groq_models:
+                payload = json.dumps({
+                    "model": model_name,
+                    "messages": messages,
+                    "temperature": 0.7,
+                    "max_tokens": 260,
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    self.groq_url,
+                    data=payload,
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {api_key}",
+                        "User-Agent": "CosmoCare-Space-Agent/1.0",
+                    },
+                    method="POST",
+                )
+                try:
+                    with urllib.request.urlopen(req, timeout=15.0) as resp:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        self.groq_model = model_name
+                        self.last_llm_error = None
+                        return data["choices"][0]["message"]["content"]
+                except urllib.error.HTTPError as e:
+                    err_body = e.read().decode("utf-8", errors="ignore")
+                    self.last_llm_error = f"HTTP {e.code} ({model_name}): {err_body[:200]}"
+                    print(f"[GROQ ERROR] {self.last_llm_error}", flush=True)
+                except Exception as e:
+                    self.last_llm_error = f"{model_name}: {e}"
+                    print(f"[GROQ ERROR] {self.last_llm_error}", flush=True)
+        else:
+            self.last_llm_error = "GROQ_API_KEY environment variable is not set."
+            print(f"[GROQ ERROR] {self.last_llm_error}", flush=True)
 
-        payload = json.dumps({
-            "model": "local-model",
-            "messages": messages,
-            "temperature": 0.6,
-            "max_tokens": 150
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            self.lm_studio_url,
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST"
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=15.0) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                return data["choices"][0]["message"]["content"]
-        except Exception:
-            return None
+        return None
