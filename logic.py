@@ -6,6 +6,7 @@ import math
 import random
 import hashlib
 import urllib.request
+import urllib.error
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -14,7 +15,26 @@ from typing import Dict, List, Tuple, Union, Any, Optional
 import tempfile
 
 _LOCAL_DB = Path(__file__).parent / "cosmo_care.db"
-DB_NAME = str(_LOCAL_DB) if os.access(Path(__file__).parent, os.W_OK) else os.path.join(tempfile.gettempdir(), "cosmo_care.db")
+
+
+def _load_local_env():
+    env_path = Path(__file__).parent / ".env"
+    if env_path.exists():
+        for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k = k.strip()
+            v = v.strip().strip('"').strip("'")
+            if k and not os.environ.get(k):
+                os.environ[k] = v
+
+
+_load_local_env()
+
+DB_NAME = str(_LOCAL_DB) if os.access(Path(__file__).parent, os.W_OK) else os.path.join(tempfile.gettempdir(),
+                                                                                        "cosmo_care.db")
 DATA_DIR = Path(__file__).parent / "data"
 MEDIA_DIR = Path(__file__).parent / "assets" / "media"
 USER_MEDIA_ROOT = Path(__file__).parent / "assets" / "user_media"
@@ -302,9 +322,12 @@ class DatabaseManager:
         cursor = conn.cursor()
 
         default_crew = [
-            ("A004", "Dr. Sarah Mitchell", "Chief Medical Officer", 42, "Female", 170.5, 65.0, "O+", "High", 180, hash_password("Sarah@2026")),
-            ("A005", "Cmdr. James Holden", "Mission Commander", 48, "Male", 182.0, 84.5, "A+", "Moderate", 365, hash_password("Holden@2026")),
-            ("A006", "Eng. Elena Rostova", "Flight Systems Engineer", 35, "Female", 166.0, 59.0, "B+", "High", 365, hash_password("Elena@2026")),
+            ("A004", "Dr. Sarah Mitchell", "Chief Medical Officer", 42, "Female", 170.5, 65.0, "O+", "High", 180,
+             hash_password("Sarah@2026")),
+            ("A005", "Cmdr. James Holden", "Mission Commander", 48, "Male", 182.0, 84.5, "A+", "Moderate", 365,
+             hash_password("Holden@2026")),
+            ("A006", "Eng. Elena Rostova", "Flight Systems Engineer", 35, "Female", 166.0, 59.0, "B+", "High", 365,
+             hash_password("Elena@2026")),
         ]
         for c in default_crew:
             cursor.execute("""
@@ -347,12 +370,23 @@ class DatabaseManager:
         sched_count = cursor.execute("SELECT COUNT(*) as c FROM system_schedule").fetchone()["c"]
         if sched_count == 0:
             default_schedules = [
-                ("07:00", "Morning Wake-Up & Biometric Scan", "Good morning! Alarm completed. Please confirm you are awake so I can log your sleep duration, and complete your morning symptom check-in.", 1),
-                ("08:00", "Breakfast & Hydration Ration Log", "It is 08:00 hours. Time for breakfast and hydration. Please tell me or log your consumed ration packs so I can update the ship's food stocks.", 0),
-                ("10:30", "ARED Resistive & T2 Countermeasure Block", "Time for your scheduled 2.5-hour ARED resistive and T2 treadmill exercise countermeasure session.", 0),
-                ("13:00", "Midday Nutrition & Water Check", "Hey there, lunch time! Did you eat and drink your water ration? Don't forget to log your ration packs.", 0),
-                ("19:00", "Evening Dinner & Psychological Check-in", "Good evening. Time for dinner rations and your evening health and mood check-in.", 0),
-                ("22:00", "Circadian Sleep Pod Lock-in", "It is 22:00 hours. Time for sleep. Please confirm when you are ready to sleep so I can start your sleep timer.", 0),
+                ("07:00", "Morning Wake-Up & Biometric Scan",
+                 "Good morning! Alarm completed. Please confirm you are awake so I can log your sleep duration, and complete your morning symptom check-in.",
+                 1),
+                ("08:00", "Breakfast & Hydration Ration Log",
+                 "It is 08:00 hours. Time for breakfast and hydration. Please tell me or log your consumed ration packs so I can update the ship's food stocks.",
+                 0),
+                ("10:30", "ARED Resistive & T2 Countermeasure Block",
+                 "Time for your scheduled 2.5-hour ARED resistive and T2 treadmill exercise countermeasure session.",
+                 0),
+                ("13:00", "Midday Nutrition & Water Check",
+                 "Hey there, lunch time! Did you eat and drink your water ration? Don't forget to log your ration packs.",
+                 0),
+                ("19:00", "Evening Dinner & Psychological Check-in",
+                 "Good evening. Time for dinner rations and your evening health and mood check-in.", 0),
+                ("22:00", "Circadian Sleep Pod Lock-in",
+                 "It is 22:00 hours. Time for sleep. Please confirm when you are ready to sleep so I can start your sleep timer.",
+                 0),
             ]
             cursor.executemany("""
                 INSERT INTO system_schedule (time_slot, event_title, voice_prompt, play_alarm)
@@ -368,7 +402,9 @@ class DatabaseManager:
             cursor.execute("INSERT OR IGNORE INTO mission_state (state_key, state_value) VALUES (?, ?)", (k, v))
 
         for aid, _, _, _, _, _, _, _, _, _, _ in default_crew:
-            v_cnt = cursor.execute("SELECT COUNT(*) as c FROM live_vitals_telemetry WHERE astronaut_id = ?", (aid,)).fetchone()["c"]
+            v_cnt = \
+            cursor.execute("SELECT COUNT(*) as c FROM live_vitals_telemetry WHERE astronaut_id = ?", (aid,)).fetchone()[
+                "c"]
             if v_cnt < 5:
                 for day_offset in range(18, 25):
                     cursor.execute("""
@@ -384,7 +420,8 @@ class DatabaseManager:
                         round(random.uniform(2.3, 2.8), 2),
                         day_offset
                     ))
-            s_cnt = cursor.execute("SELECT COUNT(*) as c FROM sleep_sessions WHERE astronaut_id = ?", (aid,)).fetchone()["c"]
+            s_cnt = \
+            cursor.execute("SELECT COUNT(*) as c FROM sleep_sessions WHERE astronaut_id = ?", (aid,)).fetchone()["c"]
             if s_cnt < 3:
                 for d in range(5, 0, -1):
                     st_dt = datetime.now(timezone.utc) - timedelta(days=d, hours=8)
@@ -511,7 +548,8 @@ class DatabaseManager:
 
     def mark_notifications_read(self, astronaut_id: str):
         conn = self.get_connection()
-        conn.execute("UPDATE notifications SET is_read = 1 WHERE astronaut_id = ? OR astronaut_id IS NULL", (astronaut_id,))
+        conn.execute("UPDATE notifications SET is_read = 1 WHERE astronaut_id = ? OR astronaut_id IS NULL",
+                     (astronaut_id,))
         conn.commit()
         conn.close()
 
@@ -554,7 +592,7 @@ class DatabaseManager:
         conn.execute("DELETE FROM system_schedule WHERE schedule_id = ?", (schedule_id,))
         conn.commit()
         conn.close()
-    
+
     def update_astronaut_password(self, astronaut_id: str, new_password: str) -> bool:
         if not new_password or len(new_password.strip()) < 4:
             return False
@@ -565,10 +603,12 @@ class DatabaseManager:
         )
         conn.commit()
         conn.close()
-        self.add_notification(astronaut_id, "INFO", "Security Credentials Updated", "Your crew password hash was updated in the onboard database.")
+        self.add_notification(astronaut_id, "INFO", "Security Credentials Updated",
+                              "Your crew password hash was updated in the onboard database.")
         return True
 
-    def save_user_media_file(self, astronaut_id: str, category: str, filename: str, file_bytes: bytes, mood_tag: str = "sad") -> str:
+    def save_user_media_file(self, astronaut_id: str, category: str, filename: str, file_bytes: bytes,
+                             mood_tag: str = "sad") -> str:
         folders = self.ensure_user_media_folders(astronaut_id)
         target_dir = folders.get(category, folders["music"])
         safe_name = os.path.basename(filename)
@@ -590,7 +630,8 @@ class DatabaseManager:
         folders = self.ensure_user_media_folders(astronaut_id)
         result = {}
         for k, folder in folders.items():
-            result[k] = sorted(list(folder.iterdir()), key=lambda x: x.stat().st_mtime, reverse=True) if folder.exists() else []
+            result[k] = sorted(list(folder.iterdir()), key=lambda x: x.stat().st_mtime,
+                               reverse=True) if folder.exists() else []
         return result
 
     def delete_user_media_file(self, astronaut_id: str, file_path_str: str):
@@ -598,9 +639,11 @@ class DatabaseManager:
         if p.exists():
             p.unlink()
         conn = self.get_connection()
-        conn.execute("DELETE FROM media_preferences WHERE astronaut_id = ? AND file_path = ?", (astronaut_id, file_path_str))
+        conn.execute("DELETE FROM media_preferences WHERE astronaut_id = ? AND file_path = ?",
+                     (astronaut_id, file_path_str))
         conn.commit()
         conn.close()
+
 
 class SensorSimulator:
     def __init__(self, db: DatabaseManager):
@@ -624,10 +667,12 @@ class SensorSimulator:
             dbp=float(row["diastolic_mmhg"]),
             hrv=float(row["hrv_rmssd"]),
             co2=float(row["co2_mmhg"] if "co2_mmhg" in row.keys() and row["co2_mmhg"] is not None else 2.6),
-            ectopic=int(row["ectopic_beats"] if "ectopic_beats" in row.keys() and row["ectopic_beats"] is not None else 0),
+            ectopic=int(
+                row["ectopic_beats"] if "ectopic_beats" in row.keys() and row["ectopic_beats"] is not None else 0),
         )
 
-    def generate_live_vitals(self, astronaut_id: str, flight_day: int = 24, anomaly_mode: Optional[str] = None) -> AstronautVitals:
+    def generate_live_vitals(self, astronaut_id: str, flight_day: int = 24,
+                             anomaly_mode: Optional[str] = None) -> AstronautVitals:
         hr = round(random.gauss(68.0, 3.5), 1)
         sbp = round(random.gauss(118.0, 4.0), 1)
         dbp = round(random.gauss(76.0, 3.0), 1)
@@ -679,7 +724,8 @@ class SensorSimulator:
             INSERT INTO live_vitals_telemetry 
             (astronaut_id, heart_rate_bpm, systolic_mmhg, diastolic_mmhg, hrv_rmssd, co2_mmhg, ectopic_beats, flight_day)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (astronaut_id, vitals.hr, vitals.sbp, vitals.dbp, vitals.hrv, vitals.co2, vitals.ectopic, vitals.flight_day))
+        """, (astronaut_id, vitals.hr, vitals.sbp, vitals.dbp, vitals.hrv, vitals.co2, vitals.ectopic,
+              vitals.flight_day))
         conn.commit()
         conn.close()
         return vitals
@@ -780,7 +826,7 @@ class BioAstronauticsLogic:
         recheck_mins = 0
 
         if v.ectopic >= 3 or (
-            v.symptom in ["Acute Cramp/Spasm", "Generalized Weakness"] and z_hr > z_limit and z_hrv < -1.5
+                v.symptom in ["Acute Cramp/Spasm", "Generalized Weakness"] and z_hr > z_limit and z_hrv < -1.5
         ):
             status_level = "MEDICAL HOLD"
             status_color = "#ef4444"
@@ -916,22 +962,22 @@ class BioAstronauticsLogic:
 
         if is_pvc:
             ecg_mv = (
-                1.45 * math.exp(-(((phase - 0.24) / 0.045) ** 2))
-                - 0.65 * math.exp(-(((phase - 0.36) / 0.055) ** 2))
+                    1.45 * math.exp(-(((phase - 0.24) / 0.045) ** 2))
+                    - 0.65 * math.exp(-(((phase - 0.36) / 0.055) ** 2))
             )
         else:
             ecg_mv = (
-                0.15 * math.exp(-(((phase - 0.18) / 0.035) ** 2))
-                - 0.15 * math.exp(-(((phase - 0.28) / 0.012) ** 2))
-                + 1.15 * math.exp(-(((phase - 0.30) / 0.015) ** 2))
-                - 0.25 * math.exp(-(((phase - 0.32) / 0.012) ** 2))
-                + t_wave_amp * math.exp(-(((phase - 0.52) / 0.055) ** 2))
+                    0.15 * math.exp(-(((phase - 0.18) / 0.035) ** 2))
+                    - 0.15 * math.exp(-(((phase - 0.28) / 0.012) ** 2))
+                    + 1.15 * math.exp(-(((phase - 0.30) / 0.015) ** 2))
+                    - 0.25 * math.exp(-(((phase - 0.32) / 0.012) ** 2))
+                    + t_wave_amp * math.exp(-(((phase - 0.52) / 0.055) ** 2))
             )
 
         pp_scale = max(0.3, (v.sbp - v.dbp) / 42.0)
         ppg_amp = pp_scale * (
-            0.85 * math.exp(-(((phase - 0.38) / 0.09) ** 2))
-            + 0.38 * math.exp(-(((phase - 0.56) / 0.11) ** 2))
+                0.85 * math.exp(-(((phase - 0.38) / 0.09) ** 2))
+                + 0.38 * math.exp(-(((phase - 0.56) / 0.11) ** 2))
         )
 
         return {"ecg_mv": round(ecg_mv, 4), "ppg_amp": round(ppg_amp, 4), "is_pvc": is_pvc}
@@ -1160,7 +1206,8 @@ class RoutineAndSleepTracker:
         conn.close()
         return {"astronaut_id": astronaut_id, "sleep_start": start_time, "status": "SLEEPING"}
 
-    def confirm_wake_up_and_calculate_sleep(self, astronaut_id: str, custom_wake_iso: Optional[str] = None) -> Dict[str, Any]:
+    def confirm_wake_up_and_calculate_sleep(self, astronaut_id: str, custom_wake_iso: Optional[str] = None) -> Dict[
+        str, Any]:
         wake_dt = datetime.fromisoformat(custom_wake_iso) if custom_wake_iso else datetime.now(timezone.utc)
         conn = self.db.get_connection()
         row = conn.execute("""
@@ -1336,12 +1383,12 @@ class DangerAlertManager:
 
 
 def build_master_system_prompt(
-    astronaut_name: str,
-    current_time: str,
-    active_alerts=None,
-    available_media: Optional[List[str]] = None,
-    last_played_title: Optional[str] = None,
-    vitals: Optional[AstronautVitals] = None,
+        astronaut_name: str,
+        current_time: str,
+        active_alerts=None,
+        available_media: Optional[List[str]] = None,
+        last_played_title: Optional[str] = None,
+        vitals: Optional[AstronautVitals] = None,
 ):
     media_list_str = ", ".join(available_media) if available_media else "No local music files uploaded yet"
 
@@ -1391,7 +1438,8 @@ Available local music/video files: [{media_list_str}]
 
 
 class AstroCompanionAgent:
-    def __init__(self, db: DatabaseManager, lm_studio_url: str = "http://localhost:1234/v1/chat/completions", groq_api_key: Optional[str] = None):
+    def __init__(self, db: DatabaseManager, lm_studio_url: str = "http://localhost:1234/v1/chat/completions",
+                 groq_api_key: Optional[str] = None):
         self.db = db
         self.lm_studio_url = lm_studio_url
         self.groq_api_key = groq_api_key or os.environ.get("GROQ_API_KEY")
@@ -1474,7 +1522,8 @@ class AstroCompanionAgent:
             self.routine_tracker.start_sleep_session(astronaut_id)
             db_updates.append("Sleep DB Updated: Sleep session timer started (Status: SLEEPING)")
 
-        eat_keywords = ["ate", "consumed", "had breakfast", "had lunch", "had dinner", "mre", "ration", "protein", "water", "drank", "rice", "oats", "chicken", "tuna", "energy bar"]
+        eat_keywords = ["ate", "consumed", "had breakfast", "had lunch", "had dinner", "mre", "ration", "protein",
+                        "water", "drank", "rice", "oats", "chicken", "tuna", "energy bar"]
         if "[UPDATE_STOCK]" in reply_text or any(k in lower_msg for k in eat_keywords):
             conn = self.db.get_connection()
             items = conn.execute("SELECT * FROM inventory").fetchall()
@@ -1496,7 +1545,8 @@ class AstroCompanionAgent:
                         updated_any = True
                         break
 
-            if not updated_any and items and any(w in lower_msg for w in ["ate", "consumed", "ration", "mre", "breakfast", "lunch", "dinner"]):
+            if not updated_any and items and any(
+                    w in lower_msg for w in ["ate", "consumed", "ration", "mre", "breakfast", "lunch", "dinner"]):
                 c_res = self.supply_engine.consume_ration(astronaut_id, items[0]["item_id"], rations_count=qty)
                 if c_res.get("success"):
                     db_updates.append(
@@ -1506,15 +1556,15 @@ class AstroCompanionAgent:
         return db_updates
 
     def chat(
-        self,
-        astronaut_id: str,
-        user_message: str,
-        is_voice_input: bool = False,
-        current_mood: int = 7,
-        active_alerts: Optional[List[Dict]] = None,
-        simulated_time: str = "08:00",
-        vitals: Optional[AstronautVitals] = None,
-        save_user_msg: bool = True,
+            self,
+            astronaut_id: str,
+            user_message: str,
+            is_voice_input: bool = False,
+            current_mood: int = 7,
+            active_alerts: Optional[List[Dict]] = None,
+            simulated_time: str = "08:00",
+            vitals: Optional[AstronautVitals] = None,
+            save_user_msg: bool = True,
     ) -> Dict[str, Any]:
         cleaned_msg = self.clean_voice_transcript(user_message) if is_voice_input else user_message.strip()
         lower_msg = cleaned_msg.lower()
@@ -1552,7 +1602,8 @@ class AstroCompanionAgent:
                 self.last_played_media[astronaut_id] = next_track
                 msg = f"No problem — switching to {next_track['title']} for you."
                 conn = self.db.get_connection()
-                conn.execute("INSERT INTO ai_chat_history (astronaut_id, sender, message_text) VALUES (?, 'AI', ?)", (astronaut_id, msg))
+                conn.execute("INSERT INTO ai_chat_history (astronaut_id, sender, message_text) VALUES (?, 'AI', ?)",
+                             (astronaut_id, msg))
                 conn.commit()
                 conn.close()
                 return {
@@ -1568,7 +1619,8 @@ class AstroCompanionAgent:
             elif len(all_media) == 1:
                 msg = f"You only have one track ({all_media[0]['title']}) in your media vault right now. You can upload more in your Profile page — or want me to tell you a joke instead?"
                 conn = self.db.get_connection()
-                conn.execute("INSERT INTO ai_chat_history (astronaut_id, sender, message_text) VALUES (?, 'AI', ?)", (astronaut_id, msg))
+                conn.execute("INSERT INTO ai_chat_history (astronaut_id, sender, message_text) VALUES (?, 'AI', ?)",
+                             (astronaut_id, msg))
                 conn.commit()
                 conn.close()
                 return {
@@ -1586,20 +1638,23 @@ class AstroCompanionAgent:
         clean_words = [w.strip(".,!?") for w in lower_msg.split()]
         has_negation = any(w in clean_words for w in ["no", "nope", "nah", "not", "don't", "dont", "epaa", "epa"])
         explicit_play_cmd = save_user_msg and not has_negation and any(
-            w in lower_msg for w in ["yes play", "play song", "play music", "play a song", "play audio", "sure play", "play it"]
+            w in lower_msg for w in
+            ["yes play", "play song", "play music", "play a song", "play audio", "sure play", "play it"]
         )
         affirmative_to_pending = (
-            save_user_msg
-            and astronaut_id in self.pending_media
-            and not has_negation
-            and any(w in clean_words for w in ["yes", "yeah", "yep", "sure", "ok", "okay", "please", "play", "ow", "hari"])
+                save_user_msg
+                and astronaut_id in self.pending_media
+                and not has_negation
+                and any(
+            w in clean_words for w in ["yes", "yeah", "yep", "sure", "ok", "okay", "please", "play", "ow", "hari"])
         )
 
         if astronaut_id in self.pending_media and has_negation:
             self.pending_media.pop(astronaut_id, None)
 
         if (explicit_play_cmd or affirmative_to_pending) and all_media:
-            chosen = self.pending_media.pop(astronaut_id, None) or self.get_random_local_media(astronaut_id, exclude_path=last_path)
+            chosen = self.pending_media.pop(astronaut_id, None) or self.get_random_local_media(astronaut_id,
+                                                                                               exclude_path=last_path)
             self.last_played_media[astronaut_id] = chosen
             return {
                 "corrected_user_input": cleaned_msg,
@@ -1654,7 +1709,8 @@ class AstroCompanionAgent:
         if trigger_play_media or trigger_ask_media:
             requested_name = (play_match.group(1).strip().lower() if play_match and play_match.group(1) else "")
             for m in all_media:
-                if (requested_name and requested_name in m["title"].lower()) or (m["title"].lower() in reply_text.lower()):
+                if (requested_name and requested_name in m["title"].lower()) or (
+                        m["title"].lower() in reply_text.lower()):
                     chosen_media = m
                     break
             if not chosen_media:
@@ -1664,7 +1720,8 @@ class AstroCompanionAgent:
                 self.pending_media[astronaut_id] = chosen_media
 
         clean_spoken_reply = re.sub(r"\[PLAY_MEDIA(?::[^\]]+)?\]", "", reply_text)
-        for tag in ["[ASK_MEDIA]", "[DANGER_ALERT]", "[SET_CHECKIN_15M]", "[CONFIRM_WAKE]", "[UPDATE_STOCK]", "[CONFIRM_SLEEP]"]:
+        for tag in ["[ASK_MEDIA]", "[DANGER_ALERT]", "[SET_CHECKIN_15M]", "[CONFIRM_WAKE]", "[UPDATE_STOCK]",
+                    "[CONFIRM_SLEEP]"]:
             clean_spoken_reply = clean_spoken_reply.replace(tag, "")
         clean_spoken_reply = clean_spoken_reply.strip()
 
@@ -1718,8 +1775,9 @@ class AstroCompanionAgent:
                     data=payload,
                     headers={
                         "Content-Type": "application/json",
+                        "Accept": "application/json",
                         "Authorization": f"Bearer {api_key}",
-                        "User-Agent": "CosmoCare-Space-Agent/1.0",
+                        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                     },
                     method="POST",
                 )
