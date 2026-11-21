@@ -145,8 +145,7 @@
     if (!document.getElementById("cosmo-media-bar")) {
       const bar = document.createElement("div");
       bar.id = "cosmo-media-bar";
-      bar.className = "hidden fixed left-6 bottom-14 z-50 w-96 max-w-[90vw] rounded-2xl border border-cyan-400/50 bg-slate-950/95 backdrop-blur-2xl p-3.5 shadow-[0_0_30px_rgba(0,240,255,0.3)]";
-      bar.innerHTML = `
+      bar.className = "hidden fixed left-24 md:left-32 bottom-14 z-50 w-96 max-w-[90vw] rounded-2xl border border-cyan-400/50 bg-slate-950/95 backdrop-blur-2xl p-3.5 shadow-[0_0_30px_rgba(0,240,255,0.3)]";      bar.innerHTML = `
         <div class="flex items-center justify-between pb-2 border-b border-cyan-500/20">
           <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
@@ -288,6 +287,9 @@
     const streamUrl = `/api/media/stream?path=${encodeURIComponent(filePath)}`;
     const isVideo = filePath.toLowerCase().endsWith(".mp4");
 
+    const oldMedia = document.getElementById("cosmo-active-media");
+    if (oldMedia) { oldMedia.pause(); oldMedia.src = ""; }
+    
     slot.innerHTML = isVideo
       ? `<video id="cosmo-active-media" src="${streamUrl}" controls autoplay class="w-full rounded-lg max-h-44"></video>`
       : `<audio id="cosmo-active-media" src="${streamUrl}" controls autoplay class="w-full"></audio>`;
@@ -388,6 +390,33 @@
     } else if (micBtn && input) {
       micBtn.onclick = () => toggleVoiceTyping(micBtn, input);
     }
+
+    document.querySelectorAll(".dora-suggestion").forEach((sBtn) => {
+      sBtn.onclick = (e) => {
+        e.stopPropagation();
+        sendToDora(sBtn.textContent.trim(), false);
+      };
+    });
+
+    const clearBtn = document.getElementById("dora-clear-btn");
+    if (clearBtn) {
+      clearBtn.onclick = () => {
+        const box = document.getElementById("dora-messages-container");
+        if (box) box.innerHTML = "";
+      };
+    }
+
+    if (!window._cosmoDoraOutsideBound) {
+      window._cosmoDoraOutsideBound = true;
+      document.addEventListener("click", (e) => {
+        const doraContainer = document.getElementById("dora-ai-container");
+        const doraDrawer = document.getElementById("dora-chat-drawer");
+        if (doraDrawer && !doraDrawer.classList.contains("hidden") && doraContainer && !doraContainer.contains(e.target)) {
+          doraDrawer.classList.add("hidden");
+        }
+      });
+    }
+    
   }
 
   async function toggleVoiceTyping(micBtn, inputEl) {
