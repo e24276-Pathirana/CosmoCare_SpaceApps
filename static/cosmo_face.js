@@ -9,24 +9,24 @@
   const LOCAL_ONNX = "/static/models/emotion-ferplus-8.onnx";
   const HF_ONNX = "https://huggingface.co/onnxmodelzoo/emotion-ferplus-8/resolve/main/emotion-ferplus-8.onnx";
 
-  const SAD_STREAK_SECONDS = 6;       // තත්පර 6ක් sad වෙලා හිටියොත් DORA අහනවා
-  const COOLDOWN_MS = 180 * 1000;     // විනාඩි 3ක cooldown (දිගටම spam නොවෙන්න)
-  const CONFIDENCE_THRESHOLD = 0.55;
+  const SAD_STREAK_SECONDS = 4;
+  const COOLDOWN_MS = 90 * 1000;
+  const CONFIDENCE_THRESHOLD = 0.50;
 
   let detector = null;
   let session = null;
   let stream = null;
   let running = false;
+  let starting = false;
   let busy = false;
   let lastExprAt = 0;
   let upsetStreak = 0;
   let lastTriggerAt = 0;
 
-  // Stitch UI එකේ button එක නැති වුණත් fallback විදිහට UI එක හදනවා
   function ensureCameraWidgetUI() {
     if (!document.getElementById("cosmo-cam-trigger")) {
       const wrap = document.createElement("div");
-      wrap.id = "cosmo-cam-wrapper";
+      wrap.id = "cosmo-cam-container";
       wrap.className = "fixed left-6 bottom-14 z-40 flex flex-col items-start select-none";
       wrap.innerHTML = `
         <div id="cosmo-cam-panel" class="hidden mb-3 w-72 rounded-2xl border border-cyan-400/40 bg-slate-950/95 backdrop-blur-2xl p-3 shadow-[0_0_28px_rgba(0,240,255,0.22)]">
@@ -35,14 +35,13 @@
             <button id="cosmo-cam-close" type="button" class="text-slate-400 hover:text-white text-xs px-1 cursor-pointer">✕</button>
           </div>
           <div class="relative mt-2 rounded-xl overflow-hidden bg-black aspect-[16/10] border border-cyan-500/25">
-            <video id="cosmo-cam-video" muted playsinline class="w-full h-full object-cover" style="transform: scaleX(-1);"></video>
-            <div id="cosmo-cam-status-overlay" class="absolute inset-0 flex items-center justify-center bg-slate-950/80 text-[10px] font-mono text-cyan-300 text-center px-3">
+            <video id="cosmo-cam-video" autoplay muted playsinline class="w-full h-full object-cover" style="transform: scaleX(-1);"></video>
+            <div id="cosmo-cam-placeholder" class="absolute inset-0 flex items-center justify-center bg-slate-950/85 text-[10px] font-mono text-cyan-300 text-center px-3">
               Initializing optical sensor...
             </div>
           </div>
-          <div class="mt-2.5 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-white/10">
-            <span id="cosmo-mood-badge" class="text-[11px] font-mono font-bold text-cyan-300">● SCANNING...</span>
-            <span id="cosmo-mood-conf" class="text-[10px] font-mono text-slate-400">--%</span>
+          <div id="cosmo-mood-badge" class="mt-2.5 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-white/10 text-[11px] font-mono font-bold text-cyan-300">
+            <span>● SCANNING...</span><span class="text-slate-400 text-[10px]">--%</span>
           </div>
           <p class="mt-1.5 text-[9px] font-mono text-slate-500 text-center">On-device processing • Video never uploaded</p>
         </div>
@@ -59,6 +58,17 @@
       document.body.appendChild(wrap);
     }
 
+    // Drawer එක වැහිලා තිබුණත් browser එක frame decoding pause නොකරන්න persistent hidden video එකක්
+    if (!document.getElementById("cosmo-cam-bg-video")) {
+      const bgVid = document.createElement("video");
+      bgVid.id = "cosmo-cam-bg-video";
+      bgVid.muted = true;
+      bgVid.playsInline = true;
+      bgVid.autoplay = true;
+      bgVid.style.cssText = "position:fixed;bottom:0;left:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1;";
+      document.body.appendChild(bgVid);
+    }
+
     if (!document.getElementById("cosmo-cam-canvas")) {
       const c = document.createElement("canvas");
       c.id = "cosmo-cam-canvas";
@@ -72,30 +82,73 @@
     const panel = document.getElementById("cosmo-cam-panel");
     const closeBtn = document.getElementById("cosmo-cam-close");
 
+    function attachPreviewVideo() {
+      const preview = document.getElementById("cosmo-cam-video");
+      const placeholder = document.getElementById("cosmo-cam-placeholder");
+      if (preview && stream) {
+        if (preview.srcObject !== stream) preview.srcObject = stream;
+        preview.classList.remove("hidden");
+        preview.play().catch(() => {});
+        if (placeholder) placeholder.classList.add("hidden");
+      }
+    }
+
     if (trigger && panel) {
-      trigger.onclick = () => {
+      trigger.onclick = (e) => {
+        e.stopPropagation();
+        const willOpen = panel.classList.contains("hidden");
         panel.classList.toggle("hidden");
-        if (!running) startBackgroundCamera();
+        trigger.setAttribute("aria-expanded", String(willOpen));
+        if (willOpen) {
+          if (stream) attachPreviewVideo();
+          else startBackgroundCamera();
+        }
       };
     }
+
     if (closeBtn && panel) {
-      closeBtn.onclick = () => panel.classList.add("hidden");
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        panel.classList.add("hidden");
+        if (trigger) trigger.setAttribute("aria-expanded", "false");
+        // Stream එක stop කරන්නේ නැහැ — background detection දිගටම වැඩ!
+      };
     }
+
+    window.inspectOpticalFeed = function (e) {
+      if (e) e.stopPropagation();
+      const drawer = document.getElementById("notification-drawer");
+      if (drawer) drawer.classList.add("hidden");
+      if (panel) {
+        panel.classList.remove("hidden");
+        if (stream) attachPreviewVideo();
+        else startBackgroundCamera();
+      }
+    };
+
+    document.addEventListener("click", (e) => {
+      const container = document.getElementById("cosmo-cam-container");
+      if (panel && !panel.classList.contains("hidden") && container) {
+        if (!container.contains(e.target) && !e.target.closest("#notification-drawer")) {
+          panel.classList.add("hidden");
+          if (trigger) trigger.setAttribute("aria-expanded", "false");
+        }
+      }
+    });
   }
 
-  function setStatusUI(label, score, overlayText = "") {
+  function setStatusUI(label, score, placeholderText = "") {
     const badge = document.getElementById("cosmo-mood-badge");
-    const conf = document.getElementById("cosmo-mood-conf");
-    const overlay = document.getElementById("cosmo-cam-status-overlay");
+    const placeholder = document.getElementById("cosmo-cam-placeholder");
+    const preview = document.getElementById("cosmo-cam-video");
     const dot = document.getElementById("cosmo-cam-dot");
 
-    if (overlay) {
-      if (overlayText) {
-        overlay.textContent = overlayText;
-        overlay.classList.remove("hidden");
-      } else {
-        overlay.classList.add("hidden");
-      }
+    if (placeholderText && placeholder && !stream) {
+      placeholder.classList.remove("hidden");
+      placeholder.innerHTML = `<span class="text-[10px] font-mono text-cyan-300 px-2 text-center">${placeholderText}</span>`;
+    } else if (stream && preview) {
+      preview.classList.remove("hidden");
+      if (placeholder) placeholder.classList.add("hidden");
     }
 
     if (dot && running) {
@@ -104,19 +157,22 @@
 
     if (!badge || !label) return;
     const prettyMap = {
-      happiness: { text: "● STATUS: HAPPY", cls: "text-emerald-400" },
-      sadness: { text: "● STATUS: SAD", cls: "text-rose-400" },
-      anger: { text: "● STATUS: UPSET", cls: "text-amber-400" },
-      fear: { text: "● STATUS: STRESSED", cls: "text-amber-300" },
-      surprise: { text: "● STATUS: SURPRISED", cls: "text-sky-300" },
-      neutral: { text: "● STATUS: NEUTRAL", cls: "text-cyan-300" },
-      disgust: { text: "● STATUS: DISCOMFORT", cls: "text-amber-300" },
-      contempt: { text: "● STATUS: TENSE", cls: "text-amber-300" }
+      happiness: { text: "STATUS: HAPPY", cls: "text-emerald-400", dot: "bg-emerald-400" },
+      sadness: { text: "STATUS: SAD", cls: "text-rose-400", dot: "bg-rose-400" },
+      anger: { text: "STATUS: UPSET", cls: "text-amber-400", dot: "bg-amber-400" },
+      fear: { text: "STATUS: STRESSED", cls: "text-amber-300", dot: "bg-amber-300" },
+      surprise: { text: "STATUS: SURPRISED", cls: "text-sky-300", dot: "bg-sky-300" },
+      neutral: { text: "STATUS: NEUTRAL / FOCUSED", cls: "text-cyan-300", dot: "bg-cyan-400" },
+      disgust: { text: "STATUS: DISCOMFORT", cls: "text-amber-300", dot: "bg-amber-300" },
+      contempt: { text: "STATUS: TENSE", cls: "text-amber-300", dot: "bg-amber-300" }
     };
-    const info = prettyMap[label] || { text: `● STATUS: ${label.toUpperCase()}`, cls: "text-cyan-300" };
-    badge.className = `text-[11px] font-mono font-bold ${info.cls}`;
-    badge.textContent = info.text;
-    if (conf) conf.textContent = `${Math.round(score * 100)}%`;
+    const info = prettyMap[label] || { text: `STATUS: ${label.toUpperCase()}`, cls: "text-cyan-300", dot: "bg-cyan-400" };
+    badge.innerHTML = `
+      <span class="flex items-center gap-1.5 ${info.cls} text-[10px] font-mono font-bold tracking-wide">
+        <span class="w-1.5 h-1.5 rounded-full ${info.dot} animate-pulse"></span>${info.text}
+      </span>
+      <span class="text-white/50 text-[9px] font-mono">CONF: ${Math.round(score * 100)}%</span>
+    `;
   }
 
   async function loadModels() {
@@ -136,7 +192,7 @@
       detector = await vision.FaceDetector.createFromOptions(fs, {
         baseOptions: { modelAssetPath: MP_MODEL, delegate: "CPU" },
         runningMode: "VIDEO",
-        minDetectionConfidence: 0.6
+        minDetectionConfidence: 0.55
       });
     }
 
@@ -178,40 +234,32 @@
     return { label: LABELS[best], score: probs[best] };
   }
 
-  async function triggerDoraMoodCheckin(detectedLabel) {
-    if (typeof window.cosmoTriggerMoodCheckin === "function") {
-      window.cosmoTriggerMoodCheckin(detectedLabel);
-    }
-  }
-
   async function detectionLoop() {
     if (!running) return;
-    const video = document.getElementById("cosmo-cam-video");
+    const bgVideo = document.getElementById("cosmo-cam-bg-video");
     const now = performance.now();
 
     try {
-      if (video && video.readyState >= 2 && detector && session) {
-        const det = detector.detectForVideo(video, now).detections[0];
+      if (bgVideo && bgVideo.readyState >= 2 && bgVideo.videoWidth > 0 && detector && session) {
+        const det = detector.detectForVideo(bgVideo, now).detections[0];
         if (det && !busy && now - lastExprAt >= 500) {
           busy = true;
           const dt = lastExprAt ? (now - lastExprAt) / 1000 : 0.5;
           lastExprAt = now;
           try {
-            const expr = await classifyFace(video, det.boundingBox);
+            const expr = await classifyFace(bgVideo, det.boundingBox);
             setStatusUI(expr.label, expr.score, "");
 
             const isUpset = UPSET_LABELS.includes(expr.label) && expr.score >= CONFIDENCE_THRESHOLD;
-            if (isUpset) {
-              upsetStreak += dt;
-            } else {
-              upsetStreak = 0;
-            }
+            upsetStreak = isUpset ? upsetStreak + dt : 0;
 
             const cooldownPassed = lastTriggerAt === 0 || (Date.now() - lastTriggerAt >= COOLDOWN_MS);
             if (upsetStreak >= SAD_STREAK_SECONDS && cooldownPassed) {
               lastTriggerAt = Date.now();
               upsetStreak = 0;
-              triggerDoraMoodCheckin(expr.label);
+              if (typeof window.cosmoTriggerMoodCheckin === "function") {
+                window.cosmoTriggerMoodCheckin(expr.label);
+              }
             }
           } finally {
             busy = false;
@@ -222,36 +270,48 @@
       }
     } catch (e) {}
 
-    setTimeout(detectionLoop, 180);
+    setTimeout(detectionLoop, 200);
   }
 
   async function startBackgroundCamera() {
-    if (running || busy) return;
-    const video = document.getElementById("cosmo-cam-video");
+    if (running || starting) return;
+    starting = true;
     setStatusUI(null, 0, "Requesting camera access...");
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 480, height: 360, facingMode: "user" },
+        video: { width: { ideal: 480 }, height: { ideal: 360 }, facingMode: "user" },
         audio: false
       });
-      if (video) {
-        video.srcObject = stream;
-        await video.play();
+
+      const bgVideo = document.getElementById("cosmo-cam-bg-video");
+      if (bgVideo) {
+        bgVideo.srcObject = stream;
+        await bgVideo.play();
       }
-      setStatusUI(null, 0, "Loading expression models...");
+
+      const preview = document.getElementById("cosmo-cam-video");
+      const placeholder = document.getElementById("cosmo-cam-placeholder");
+      if (preview) {
+        preview.srcObject = stream;
+        preview.classList.remove("hidden");
+        preview.play().catch(() => {});
+      }
+      if (placeholder) placeholder.classList.add("hidden");
+
       await loadModels();
       running = true;
       lastExprAt = performance.now();
       setStatusUI("neutral", 1.0, "");
       detectionLoop();
     } catch (err) {
-      setStatusUI(null, 0, "Camera blocked. Allow camera permission & click icon.");
+      setStatusUI(null, 0, "Camera permission needed. Allow camera & click icon.");
+    } finally {
+      starting = false;
     }
   }
 
   window.addEventListener("DOMContentLoaded", () => {
     ensureCameraWidgetUI();
-    // Homepage එකට enter වුණ ගමන් background එකෙන් camera access ගන්නවා
     startBackgroundCamera();
   });
 })();
