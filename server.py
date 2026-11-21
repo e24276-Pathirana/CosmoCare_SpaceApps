@@ -324,6 +324,7 @@ def api_chat(req: ChatRequest):
         is_voice_input=req.is_voice_input,
         active_alerts=active_alerts,
         simulated_time=sim_time,
+        vitals=vitals,
     )
     ai_text = resp.get("ai_text") or ""
     resp["auto_open_chat"] = bool("?" in ai_text or resp.get("ask_media_permission"))
