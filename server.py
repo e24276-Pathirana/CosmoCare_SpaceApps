@@ -117,8 +117,9 @@ def render_page(filename: str) -> HTMLResponse:
     html = file_path.read_text(encoding="utf-8")
     html = re.sub(r"\{\{DATA:SCREEN:SCREEN_\d+\}\}", "#", html)
 
-    # home.html එකේ cosmo_os.js / cosmo_face.js එක්ක ගැටෙන mock scripts අයින් කරනවා
+   
     html = re.sub(r'<script[^>]*id=["\']cosmo-cam-controller["\'][^>]*>.*?</script>', '', html, flags=re.DOTALL)
+    html = re.sub(r'<script[^>]*id=["\']cosmo-cam-panel-controller["\'][^>]*>.*?</script>', '', html, flags=re.DOTALL)
     html = re.sub(r'<script[^>]*id=["\']dora-controller-script["\'][^>]*>.*?</script>', '', html, flags=re.DOTALL)
 
     inject_tag = '<script src="/static/cosmo_os.js"></script><script src="/static/cosmo_face.js"></script></body>'
